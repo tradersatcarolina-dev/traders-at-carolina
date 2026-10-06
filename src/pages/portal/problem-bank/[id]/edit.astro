@@ -1,0 +1,65 @@
+---
+import PortalLayout from '../../../../layouts/PortalLayout.astro';
+import QuestionFields, { type QuestionValues } from '../../../../components/members/QuestionFields.astro';
+import { parseQuestionForm, type Question } from '../../../../lib/portal';
+
+export const prerender = false;
+
+const { supabase } = Astro.locals;
+const id = Astro.params.id ?? '';
+if (!/^[0-9a-f-]{36}$/i.test(id)) return Astro.redirect('/portal/problem-bank');
+
+const { data } = await supabase.from('question_feed').select('*').eq('id', id).maybeSingle();
+const question = data as Question | null;
+if (!question || !question.is_mine) return Astro.redirect('/portal/problem-bank');
+
+let error = '';
+let values: QuestionValues = {
+  body: question.body,
+  context: question.context ?? '',
+  company: question.company,
+  category: question.category,
+  difficulty: question.difficulty,
+  round: question.round,
+  solution: question.solution ?? '',
+  is_anonymous: question.is_anonymous,
+};
+
+if (Astro.request.method === 'POST') {
+  const parsed = parseQuestionForm(await Astro.request.formData());
+  values = parsed.values;
+  error = parsed.error;
+  if (!error) {
+    // RLS only lets authors update their own questions.
+    const { error: err } = await supabase.from('questions').update(parsed.row).eq('id', id);
+    if (!err) return Astro.redirect(`/portal/problem-bank?open=${id}#question`);
+    error = "We couldn't save your changes. Please try again.";
+  }
+}
+
+const { data: companyRows } = await supabase.from('question_companies').select('company').order('company');
+const companies = (companyRows ?? []).map((r: { company: string }) => r.company);
+---
+
+<PortalLayout title="Edit question">
+  <div>
+    <p><a href={`/portal/problem-bank?open=${id}#question`}>← Back to the problem bank</a></p>
+    <h1 class="page-title serif" style="margin-top: 16px">Edit question</h1>
+  </div>
+  <form class="box edit" method="post">
+    {error && <p class="alert alert--error" role="alert">{error}</p>}
+    <QuestionFields values={values} companies={companies} />
+    <div class="edit__actions">
+      <button class="btn" type="submit">Save changes</button>
+      <a class="btn btn--secondary" href={`/portal/problem-bank?open=${id}#question`}>Cancel</a>
+      <a class="edit__delete" href={`/portal/problem-bank/${id}/delete`}>Delete this question</a>
+    </div>
+  </form>
+</PortalLayout>
+
+<style>
+  .edit { max-width: 720px; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+  .edit__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; }
+  .edit__delete { margin-left: auto; font-size: 14px; color: var(--error); }
+  @media (max-width: 640px) { .edit { padding: 20px 16px; } .edit__delete { margin-left: 0; } }
+</style>

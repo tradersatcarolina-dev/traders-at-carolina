@@ -1,6 +1,6 @@
 # Traders at Carolina — website
 
-The website for Traders at Carolina, UNC Chapel Hill's quantitative finance club. It's built with [Astro](https://astro.build) and produces a plain static site with no database and no server.
+The website for Traders at Carolina, UNC Chapel Hill's quantitative finance club. It's built with [Astro](https://astro.build). The public pages are plain static pages. The members' area uses Supabase (see section 4).
 
 **Most updates only need editing a text file in `src/data/`.** You don't need to touch any layout code.
 
@@ -123,13 +123,54 @@ Tips:
 
 ---
 
-## 4. Turning on member log-in
+## 4. Members' area
 
-The `/login` page is **design only** right now (option A): the form shows a "not live yet" message and sends nothing. The integration point is clearly marked at the bottom of `src/pages/login.astro` (`AUTH INTEGRATION POINT`). Options:
+Members log in at `/login` and land on `/portal`: Home, Resources, Problem bank, Slides and Profile. Accounts live in **Supabase**. There's no public sign-up: only club presidents can add people.
 
-- **Simplest (redirect):** make the "Log in" nav link point straight at a shared Google Drive folder. In `src/components/Nav.astro`, change `{ href: '/login', … }` to the Drive URL.
-- **Supabase or Firebase auth:** create a project, enable email and password sign-in, and replace `signIn()` in `login.astro` with the provider's sign-in call (for example `supabase.auth.signInWithPassword`). The form accepts any email address; add a domain check there if you want to limit who can sign in. Add a `/members-area` page that checks for a session before showing content. Because the site is static, the protected content must come from the auth provider (for example a Supabase table or storage bucket), not from files in this repo.
-- **UNC Onyen single sign-on:** this requires approval from UNC ITS. Ask them about Shibboleth/SAML for student organizations.
+### Setup
+
+1. Copy `.env.example` to `.env.local` and fill in the values from the Supabase dashboard (**Project Settings → API Keys**). `.env.local` is git-ignored. Never commit it.
+2. Apply the database migration in `supabase/migrations/` (with the Supabase CLI, `supabase link` then `supabase db push`, or paste the file into the dashboard's SQL editor).
+3. Optional: load the sample resources and sessions from `supabase/seed.sql`. It's clearly marked sample data, with the delete commands at the bottom.
+4. On Vercel, add `PUBLIC_SUPABASE_URL` and `PUBLIC_SUPABASE_ANON_KEY` under **Project → Settings → Environment Variables**. **Don't** add the secret key to Vercel. The website never uses it.
+
+### Inviting members
+
+The invite script reads a list of emails and emails each person an invite to set up their account:
+
+```bash
+npx tsx scripts/invite-members.ts members.csv --dry-run   # preview
+npx tsx scripts/invite-members.ts members.csv             # send invites
+```
+
+`members.csv` can be a plain list of emails (one per line), or a CSV with optional name and class year columns:
+
+```
+email,name,class_year
+jordan.lee@gmail.com,Jordan Lee,2027
+sam@unc.edu
+```
+
+People who already have an account are skipped. The script prints who was invited, skipped or failed. It needs `PUBLIC_SUPABASE_URL`, `SUPABASE_SECRET_KEY` and `SITE_URL` in `.env.local`. **Prefer personal emails**, because UNC addresses stop working after graduation.
+
+### Adding resources and sessions
+
+Presidents add practice tools, links and sessions (with slide and recording links) in the Supabase dashboard's **Table Editor**, in the `resources` and `sessions` tables. The next upcoming session shows on Home. Past sessions show on Slides, newest first.
+
+### Emails
+
+Supabase only lets you edit its email templates after you connect your own email sender (**Authentication → Emails → SMTP Settings**). Set that up before inviting the club: Supabase's built-in sender only delivers to people on your Supabase team, a few emails an hour.
+
+- **Without custom templates**, everything still works with Supabase's default emails. One catch: a password-reset link has to be opened in the same browser that asked for it.
+- **With custom templates** (paste the HTML from `supabase/templates/` into **Authentication → Emails → Templates**; subjects are in `supabase/config.toml`), emails carry the club's name and links work in any browser.
+
+### Local development
+
+`npm run dev` works against the hosted project once `.env.local` is filled in. To run a private copy of the database instead, install Docker and the Supabase CLI and run `supabase start`. It applies the migration and seed, and catches every email in a local inbox (Mailpit). The local settings are in `supabase/config.toml`.
+
+### How anonymous questions stay anonymous
+
+Members can't read the `questions` table directly, except for the `id` of their own questions. Everyone reads questions through the `question_feed` view, which shows the author's name only when a question isn't anonymous, plus vote counts and whether it's yours. So `author_id` can't be selected, filtered on, sorted by or joined through the API, even by presidents. Edits and deletes go to the table, where row level security limits them to the author (and presidents, for deletes).
 
 ---
 
@@ -137,15 +178,13 @@ The `/login` page is **design only** right now (option A): the form shows a "not
 
 1. Push this folder to a GitHub repository.
 2. Sign in at <https://vercel.com> with GitHub, then choose **Add New → Project** and pick the repository.
-3. Vercel detects Astro automatically (build command `npm run build`, output `dist`). Click **Deploy**.
+3. Vercel detects Astro automatically. Add the two `PUBLIC_SUPABASE_…` environment variables (see section 4), then click **Deploy**. The public pages are static. The members' area runs as a Vercel function.
 4. From then on, **every change pushed to `main` goes live automatically** within a minute or so. You can edit the JSON files directly on github.com (pencil icon → edit → "Commit changes") without installing anything.
 5. To use a custom domain, open **Project → Settings → Domains**. Then update `site` in `astro.config.mjs` to match.
 
 Because the opportunities board re-checks dates in the browser, it doesn't need a scheduled rebuild. If you want the built HTML to stay fresh too, add a Vercel Deploy Hook and trigger it daily, for example with a GitHub Actions cron.
 
-**Other hosts:**
-- *Netlify:* "Import from Git", build command `npm run build`, publish directory `dist`.
-- *GitHub Pages:* follow <https://docs.astro.build/en/guides/deploy/github/>. If the site lives at `username.github.io/repo-name`, also set `base: '/repo-name'` in `astro.config.mjs`.
+The members' area needs a server, so the site is set up for Vercel (`@astrojs/vercel` in `astro.config.mjs`). Moving to another host means swapping in that host's Astro adapter.
 
 ---
 
@@ -154,14 +193,21 @@ Because the opportunities board re-checks dates in the browser, it doesn't need 
 ```
 src/
   data/          ← all editable content (JSON)
-  pages/         ← one file per page: index, members, programs, login, 404
+  pages/         ← public pages: index, members, programs, 404
+                   members' area: login, setup-account, forgot/reset-password,
+                   auth/ (email-link confirmation, logout), portal/
   components/    ← Nav, Footer, Gallery (photo mosaic + crossfade), PersonCard, RailSection, Icon
-  layouts/       ← Base.astro (head, fonts, nav/footer)
+                   members/ (problem bank rows and question form)
+  layouts/       ← Base.astro (public site), AuthLayout + PortalLayout (members' area)
   lib/dates.ts   ← deadline logic shared by build and browser
-  styles/        ← global.css (design tokens, buttons, tags, chips)
+  lib/supabase.ts, lib/portal.ts ← members' area helpers
+  middleware.ts  ← sends signed-out visitors from /portal to /login
+  styles/        ← global.css (public site), members.css (members' area)
+supabase/        ← migrations (tables + security rules), seed.sql, email templates, local config
+scripts/         ← invite-members.ts
 public/
   fonts/clarity-city/  ← self-hosted Clarity City (SIL OFL, licence included)
   images/, resources/
 ```
 
-The fonts are Crimson Pro and IBM Plex Mono, both from Google Fonts, plus Clarity City (self-hosted, from <https://github.com/vmware/clarity-city>). The only client-side JavaScript runs the mobile menu, the photo crossfade (turned off for visitors who prefer reduced motion), the board date re-check, and the log-in form stub.
+The fonts are Crimson Pro and IBM Plex Mono, both from Google Fonts, plus Clarity City (self-hosted, from <https://github.com/vmware/clarity-city>). The only client-side JavaScript runs the mobile menu, the photo crossfade (turned off for visitors who prefer reduced motion), and the board date re-check. The members' area uses the same fonts (the Clarity City files are declared once, in `src/styles/fonts.css`) and works without JavaScript (forms post to the server).

@@ -1,0 +1,68 @@
+---
+// The question form fields, shared by "Submit a question" and the edit page.
+import { CATEGORIES, DIFFICULTIES, ROUNDS } from '../../lib/portal';
+
+export interface QuestionValues {
+  body: string;
+  context: string;
+  company: string;
+  category: string;
+  difficulty: string;
+  round: string;
+  solution: string;
+  is_anonymous: boolean;
+}
+
+interface Props {
+  values: QuestionValues;
+  companies: string[];
+}
+const { values: v, companies } = Astro.props;
+---
+
+<div class="field">
+  <label for="qf-body">Question</label>
+  <textarea class="textarea" id="qf-body" name="body" rows="4" required maxlength="4000" placeholder="Write it the way the interviewer asked it">{v.body}</textarea>
+</div>
+<div class="qf-grid">
+  <div class="field">
+    <label for="qf-category">Category</label>
+    <select class="select" id="qf-category" name="category">
+      {CATEGORIES.map((c) => <option selected={v.category === c}>{c}</option>)}
+    </select>
+  </div>
+  <div class="field">
+    <label for="qf-difficulty">Difficulty</label>
+    <select class="select" id="qf-difficulty" name="difficulty">
+      {DIFFICULTIES.map((d) => <option selected={v.difficulty === d}>{d}</option>)}
+    </select>
+  </div>
+  <div class="field">
+    <label for="qf-company">Company</label>
+    <input class="input" id="qf-company" name="company" list="qf-companies" required maxlength="80" placeholder="Optiver" value={v.company} autocomplete="off" />
+    <datalist id="qf-companies">{companies.map((c) => <option value={c} />)}</datalist>
+  </div>
+  <div class="field">
+    <label for="qf-round">Round</label>
+    <select class="select" id="qf-round" name="round">
+      {ROUNDS.map((r) => <option selected={v.round === r}>{r}</option>)}
+    </select>
+  </div>
+</div>
+<div class="field">
+  <label for="qf-context">Extra context <span class="optional">(optional)</span></label>
+  <textarea class="textarea" id="qf-context" name="context" rows="2" maxlength="4000" placeholder="Follow-ups, what the interviewer cared about">{v.context}</textarea>
+</div>
+<div class="field">
+  <label for="qf-solution">Solution <span class="optional">(optional, hidden until revealed)</span></label>
+  <textarea class="textarea" id="qf-solution" name="solution" rows="3" maxlength="8000">{v.solution}</textarea>
+</div>
+<label class="check"><input type="checkbox" name="is_anonymous" checked={v.is_anonymous} /> Post anonymously</label>
+
+<style>
+  .qf-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .qf-grid .input, .qf-grid .select { height: 42px; font-size: 14px; }
+  .qf-grid .input { padding: 0 12px; }
+  .textarea { font-size: 14px; }
+  @media (max-width: 400px) { .qf-grid { grid-template-columns: minmax(0, 1fr); } }
+</style>

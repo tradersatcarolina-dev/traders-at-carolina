@@ -5,3 +5,12 @@ dist/
 
 # Full-size original photos (backups only; the site uses the resized copies in public/)
 assets-originals/
+
+# Local secrets
+.env
+.env.local
+.env.*.local
+.vercel/
+
+# Invite lists (contain members' emails)
+*.csv

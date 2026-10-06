@@ -1,0 +1,127 @@
+---
+import PortalLayout from '../../layouts/PortalLayout.astro';
+
+export const prerender = false;
+
+const { supabase, profile, user } = Astro.locals;
+const url = Astro.url;
+
+let fullName = profile.full_name ?? '';
+let classYear = profile.class_year ? String(profile.class_year) : '';
+let newEmail = '';
+let profileMsg = url.searchParams.get('saved') === '1' ? 'Saved.' : '';
+let profileErr = '';
+let emailMsg = '';
+let emailErr = '';
+
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  const intent = String(form.get('intent') ?? '');
+
+  if (intent === 'profile') {
+    fullName = String(form.get('full_name') ?? '').trim();
+    classYear = String(form.get('class_year') ?? '').trim();
+    if (fullName.length > 120) profileErr = 'That name is too long.';
+    else if (classYear && !/^(19|20|21)\d{2}$/.test(classYear)) profileErr = 'Class year should be a four-digit year, like 2028.';
+    else {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ full_name: fullName || null, class_year: classYear ? Number(classYear) : null })
+        .eq('id', profile.id);
+      if (!error) return Astro.redirect('/portal/profile?saved=1');
+      profileErr = "We couldn't save your profile. Please try again.";
+    }
+  } else if (intent === 'email') {
+    newEmail = String(form.get('email') ?? '').trim();
+    const password = String(form.get('current_password') ?? '');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) emailErr = 'Enter a valid email address.';
+    else if (newEmail.toLowerCase() === user?.email?.toLowerCase()) emailErr = "That's already your login email.";
+    else if (!password) emailErr = 'Enter your current password.';
+    else if ((await supabase.auth.signInWithPassword({ email: user!.email!, password })).error) {
+      // Re-checking the password means a stolen session alone can't move the
+      // account to someone else's inbox. (Supabase lets the link sent to the
+      // new address finish the change by itself.)
+      emailErr = "That password isn't right.";
+    } else {
+      // Supabase emails a confirmation link (to both addresses, if "secure
+      // email change" is on). The email doesn't change until it's confirmed.
+      const { error } = await supabase.auth.updateUser(
+        { email: newEmail },
+        { emailRedirectTo: new URL('/auth/confirm?next=/portal/profile', url.origin).href },
+      );
+      if (error) {
+        emailErr = error.code === 'email_exists'
+          ? 'Another account already uses that email.'
+          : "We couldn't start the email change. Please try again in a minute.";
+      } else {
+        emailMsg = `Confirmation sent. Click the link we emailed to ${newEmail} (and to ${user?.email}, if one arrives there too). Your login email changes once it's confirmed.`;
+        newEmail = '';
+      }
+    }
+  }
+}
+
+// Refresh after a change request so a pending address shows up.
+const { data: fresh } = await supabase.auth.getUser();
+const currentEmail = fresh.user?.email ?? user?.email ?? '';
+const pendingEmail = fresh.user?.new_email;
+const isSchoolEmail = /(^|[.@])(unc\.edu|[a-z0-9-]+\.edu)$/i.test(currentEmail);
+---
+
+<PortalLayout title="Profile">
+  <div>
+    <h1 class="page-title serif">Profile</h1>
+    {profile.role === 'president' && <p class="page-lede">You're a club president.</p>}
+  </div>
+
+  <div class="stack">
+    <form class="box panel" method="post">
+      <h2 class="h2">Your details</h2>
+      {profileMsg && <p class="alert alert--ok" role="status">{profileMsg}</p>}
+      {profileErr && <p class="alert alert--error" role="alert">{profileErr}</p>}
+      <input type="hidden" name="intent" value="profile" />
+      <div class="field">
+        <label for="full_name">Name</label>
+        <input class="input" id="full_name" name="full_name" autocomplete="name" maxlength="120" value={fullName} />
+      </div>
+      <div class="field">
+        <label for="class_year">Class year</label>
+        <input class="input" id="class_year" name="class_year" inputmode="numeric" pattern="[0-9]{4}" placeholder="2028" value={classYear} />
+      </div>
+      <button class="btn" type="submit">Save</button>
+    </form>
+
+    <form class="box panel" method="post">
+      <h2 class="h2">Login email</h2>
+      <p>You log in with <strong>{currentEmail}</strong>.</p>
+      {isSchoolEmail && (
+        <p class="note">
+          School email addresses are shut off after graduation. Switch to a personal email now so you can keep using the members' area as an alum.
+        </p>
+      )}
+      {pendingEmail && !emailMsg && (
+        <p class="alert alert--ok" role="status">Waiting for you to confirm {pendingEmail}. Check your email for the link.</p>
+      )}
+      {emailMsg && <p class="alert alert--ok" role="status">{emailMsg}</p>}
+      {emailErr && <p class="alert alert--error" role="alert">{emailErr}</p>}
+      <input type="hidden" name="intent" value="email" />
+      <div class="field">
+        <label for="current_password">Current password</label>
+        <input class="input" id="current_password" name="current_password" type="password" autocomplete="current-password" />
+      </div>
+      <div class="field">
+        <label for="email">New email</label>
+        <input class="input" id="email" name="email" type="email" autocomplete="email" placeholder="you@gmail.com" value={newEmail} aria-describedby="email-hint" />
+        <p class="hint" id="email-hint">We'll email you a confirmation link. Nothing changes until you click it.</p>
+      </div>
+      <button class="btn btn--secondary" type="submit">Change email</button>
+    </form>
+  </div>
+</PortalLayout>
+
+<style>
+  .stack { display: flex; flex-direction: column; gap: 20px; max-width: 560px; }
+  .panel { padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+  .panel .btn { align-self: flex-start; }
+  @media (max-width: 640px) { .panel { padding: 20px 16px; } }
+</style>

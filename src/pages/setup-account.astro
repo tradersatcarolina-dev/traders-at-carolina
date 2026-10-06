@@ -1,0 +1,88 @@
+---
+import AuthLayout from '../layouts/AuthLayout.astro';
+
+export const prerender = false;
+
+// Reached from the invite email: /auth/confirm verifies the invite and signs
+// the new member in, then sends them here to choose a password.
+const { supabase, user } = Astro.locals;
+const expired = Astro.url.searchParams.get('error') === 'link-expired';
+let error = '';
+let fullName = '';
+let classYear = '';
+
+if (user) {
+  const { data: profile } = await supabase.from('profiles').select('full_name, class_year').eq('id', user.id).maybeSingle();
+  fullName = profile?.full_name ?? '';
+  classYear = profile?.class_year ? String(profile.class_year) : '';
+}
+
+if (user && Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  const password = String(form.get('password') ?? '');
+  const confirm = String(form.get('confirm') ?? '');
+  fullName = String(form.get('full_name') ?? '').trim();
+  classYear = String(form.get('class_year') ?? '').trim();
+
+  if (password.length < 8) error = 'Choose a password with at least 8 characters.';
+  else if (password !== confirm) error = "The two passwords don't match.";
+  else if (classYear && !/^(19|20|21)\d{2}$/.test(classYear)) error = 'Class year should be a four-digit year, like 2028.';
+  else {
+    const { error: pwErr } = await supabase.auth.updateUser({ password });
+    if (pwErr) {
+      error = pwErr.code === 'weak_password' ? 'That password is too weak. Try a longer one.'
+        : pwErr.code === 'same_password' ? 'Choose a password you haven’t used for this account before.'
+        : "We couldn't save your password. Please try again.";
+    } else {
+      await supabase
+        .from('profiles')
+        .update({ full_name: fullName || null, class_year: classYear ? Number(classYear) : null })
+        .eq('id', user.id);
+      return Astro.redirect('/portal');
+    }
+  }
+}
+---
+
+<AuthLayout title="Set up your account">
+  <div>
+    <h1 class="auth__title serif">Set up your account</h1>
+    {user
+      ? <p class="auth__lede">Signed in as {user.email}. Choose a password to finish.</p>
+      : <p class="auth__lede">Open the invite link in your email to get started.</p>}
+  </div>
+
+  {user ? (
+    <form class="auth__form" method="post">
+      {error && <p class="alert alert--error" role="alert">{error}</p>}
+      <div class="field">
+        <label for="password">Password</label>
+        <input class="input" id="password" name="password" type="password" autocomplete="new-password" minlength="8" required aria-describedby="pw-hint" />
+        <p class="hint" id="pw-hint">At least 8 characters.</p>
+      </div>
+      <div class="field">
+        <label for="confirm">Confirm password</label>
+        <input class="input" id="confirm" name="confirm" type="password" autocomplete="new-password" minlength="8" required />
+      </div>
+      <div class="field">
+        <label for="full_name">Name <span class="optional">(optional)</span></label>
+        <input class="input" id="full_name" name="full_name" autocomplete="name" maxlength="120" value={fullName} />
+      </div>
+      <div class="field">
+        <label for="class_year">Class year <span class="optional">(optional)</span></label>
+        <input class="input" id="class_year" name="class_year" inputmode="numeric" pattern="[0-9]{4}" placeholder="2028" value={classYear} />
+      </div>
+      <button class="btn btn--block" type="submit">Finish setup</button>
+    </form>
+  ) : (
+    <>
+      {expired && <p class="alert alert--error" role="alert">That invite link has expired or was already used. Ask a club president to send you a new one.</p>}
+      <p>
+        A club president sends each new member an email invite. Click <strong>Set up your account</strong> in that email to choose your password. Invite links work once.
+      </p>
+      <div class="auth__footer">
+        <p>Already set up? <a href="/login">Log in</a></p>
+      </div>
+    </>
+  )}
+</AuthLayout>

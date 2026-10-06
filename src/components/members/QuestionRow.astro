@@ -1,0 +1,42 @@
+---
+// One compact problem bank row: question text with company, category,
+// difficulty and upvotes. Used on Home and the problem bank list.
+import type { Question } from '../../lib/portal';
+
+interface Props {
+  question: Question;
+  href: string;
+  /** Show the round under the question (problem bank list). */
+  meta?: boolean;
+}
+const { question: q, href, meta = false } = Astro.props;
+---
+
+<a class="qrow" href={href}>
+  <span class="qrow__main">
+    <span class="qrow__title">{q.body}</span>
+    {meta && <span class="qrow__meta">{q.round}</span>}
+  </span>
+  <span class="tags qrow__tags">
+    <span class="tag tag--company">{q.company}</span>
+    <span class="tag tag--category">{q.category}</span>
+    <span>{q.difficulty}</span>
+    <span><span aria-hidden="true">▲</span><span class="visually-hidden">Upvotes:</span> {q.upvotes}</span>
+  </span>
+</a>
+
+<style>
+  .qrow {
+    display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 24px;
+    padding: 14px 18px; border-bottom: 1px solid var(--rule-soft);
+    text-decoration: none; color: var(--ink);
+  }
+  .qrow:hover { color: var(--ink); outline-offset: -2px; }
+  .qrow__main { flex: 1 1 320px; min-width: 0; }
+  .qrow__title {
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    font-size: 14.5px; font-weight: 500; overflow-wrap: anywhere;
+  }
+  .qrow__meta { display: block; margin-top: 2px; font-size: 12.5px; color: var(--muted); }
+  .qrow__tags { color: var(--secondary); }
+</style>

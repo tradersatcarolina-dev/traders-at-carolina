@@ -1,0 +1,272 @@
+---
+import PortalLayout from '../../../layouts/PortalLayout.astro';
+import QuestionRow from '../../../components/members/QuestionRow.astro';
+import QuestionFields, { type QuestionValues } from '../../../components/members/QuestionFields.astro';
+import {
+  CATEGORIES, CATEGORY_CHIP, DIFFICULTIES, SORTS, cleanSearch, parseQuestionForm, recruitingSeason,
+  type Question, type SortKey,
+} from '../../../lib/portal';
+
+export const prerender = false;
+
+const { supabase, profile, user } = Astro.locals;
+const params = Astro.url.searchParams;
+
+// ---- Actions (plain form posts, so everything works without JavaScript) ----
+let formError = '';
+let formValues: QuestionValues = {
+  body: '', context: '', company: '', category: CATEGORIES[0], difficulty: 'Medium',
+  round: 'Phone screen', solution: '', is_anonymous: true,
+};
+
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  const intent = String(form.get('intent') ?? '');
+  const id = String(form.get('id') ?? '');
+
+  if (intent === 'submit') {
+    const { values, row, error } = parseQuestionForm(form);
+    formValues = values;
+    formError = error;
+    if (!error) {
+      const { data, error: err } = await supabase.from('questions').insert(row).select('id').single();
+      if (!err && data) return Astro.redirect(`/portal/problem-bank?sort=new&open=${data.id}&posted=1#question`);
+      formError = "We couldn't post your question. Please try again.";
+    }
+  } else if ((intent === 'vote' || intent === 'asked') && /^[0-9a-f-]{36}$/i.test(id)) {
+    const table = intent === 'vote' ? 'question_votes' : 'question_asked_too';
+    if (form.get('on') === '1') {
+      await supabase.from(table).insert({ question_id: id });
+    } else {
+      await supabase.from(table).delete().eq('question_id', id).eq('user_id', user!.id);
+    }
+    const back = new URL(Astro.url);
+    back.searchParams.set('open', id);
+    back.searchParams.delete('posted');
+    return Astro.redirect(`${back.pathname}${back.search}#question`);
+  }
+}
+
+// ---- Filters (kept in the URL so filtered views can be shared) ----
+const q = cleanSearch(params.get('q') ?? '');
+const company = params.get('company') ?? '';
+const difficulty = (DIFFICULTIES as readonly string[]).includes(params.get('difficulty') ?? '') ? params.get('difficulty')! : '';
+const category = (CATEGORIES as readonly string[]).includes(params.get('category') ?? '') ? params.get('category')! : '';
+const sort: SortKey = (params.get('sort') as SortKey) in SORTS ? (params.get('sort') as SortKey) : 'top';
+const openId = params.get('open') ?? '';
+
+let query = supabase.from('question_feed').select('*');
+if (q) query = query.or(`body.ilike.*${q}*,company.ilike.*${q}*,category.ilike.*${q}*`);
+if (company) query = query.eq('company', company);
+if (difficulty) query = query.eq('difficulty', difficulty);
+if (category) query = query.eq('category', category);
+if (sort === 'top') query = query.order('upvotes', { ascending: false });
+if (sort === 'asked') query = query.order('asked_too', { ascending: false });
+query = query.order('created_at', { ascending: false }).limit(300);
+
+const [{ data: rows }, { data: companyRows }] = await Promise.all([
+  query,
+  supabase.from('question_companies').select('company').order('company'),
+]);
+const questions = (rows ?? []) as Question[];
+const companies = (companyRows ?? []).map((r: { company: string }) => r.company);
+
+// The expanded question: the one asked for in ?open=, else the first result.
+let open: Question | undefined = questions.find((x) => x.id === openId);
+if (!open && /^[0-9a-f-]{36}$/i.test(openId)) {
+  const { data } = await supabase.from('question_feed').select('*').eq('id', openId).maybeSingle();
+  open = (data as Question | null) ?? undefined;
+}
+open ??= questions[0];
+const rest = questions.filter((x) => x.id !== open?.id);
+
+/** Current URL with some query params changed (null removes one). */
+function withParams(changes: Record<string, string | null>, hash = '') {
+  const u = new URLSearchParams(params);
+  u.delete('posted');
+  for (const [k, v] of Object.entries(changes)) (v ? u.set(k, v) : u.delete(k));
+  const s = u.toString();
+  return `/portal/problem-bank${s ? `?${s}` : ''}${hash}`;
+}
+
+const isPresident = profile.role === 'president';
+const filtered = Boolean(q || company || difficulty || category);
+const posted = params.get('posted') === '1';
+---
+
+<PortalLayout title="Problem Bank">
+  <div>
+    <h1 class="page-title serif">Problem Bank</h1>
+    <p class="page-lede">Questions members were asked in real interviews and OAs. Add yours after each round so the next person is ready.</p>
+  </div>
+
+  <div class="pb">
+    <section class="pb__main" aria-label="Questions">
+      <form class="filters" method="get" data-filters>
+        <label for="search" class="visually-hidden">Search questions</label>
+        <input class="input filters__search" id="search" name="q" type="search" placeholder="Search questions, firms or topics" value={q} />
+        <label for="co" class="visually-hidden">Company</label>
+        <select class="select" id="co" name="company">
+          <option value="">All companies</option>
+          {companies.map((c) => <option selected={c === company}>{c}</option>)}
+        </select>
+        <label for="diff" class="visually-hidden">Difficulty</label>
+        <select class="select" id="diff" name="difficulty">
+          <option value="">Any difficulty</option>
+          {DIFFICULTIES.map((d) => <option selected={d === difficulty}>{d}</option>)}
+        </select>
+        <label for="sort" class="visually-hidden">Sort</label>
+        <select class="select" id="sort" name="sort">
+          {Object.entries(SORTS).map(([k, label]) => <option value={k} selected={k === sort}>{label}</option>)}
+        </select>
+        {category && <input type="hidden" name="category" value={category} />}
+        <button class="visually-hidden" type="submit">Search</button>
+      </form>
+
+      <nav class="chips" aria-label="Category">
+        <a class:list={['pill', { 'is-active': !category }]} href={withParams({ category: null, open: null })} aria-current={!category ? 'true' : undefined}>All</a>
+        {CATEGORIES.map((c) => (
+          <a class:list={['pill', { 'is-active': category === c }]} href={withParams({ category: c, open: null })} aria-current={category === c ? 'true' : undefined}>
+            {CATEGORY_CHIP[c] ?? c}
+          </a>
+        ))}
+      </nav>
+
+      {posted && <p class="alert alert--ok" role="status">Your question is live. Thanks for adding it.</p>}
+
+      {open ? (
+        <article class="qcard" id="question" aria-labelledby="qcard-title">
+          <div class="tags">
+            <span class="tag tag--company">{open.company}</span>
+            <span class="tag tag--category">{open.category}</span>
+            <span class="tag tag--plain">{open.difficulty}</span>
+            <span class="tag tag--plain">{open.round}</span>
+          </div>
+          <h2 class="qcard__title" id="qcard-title">{open.body}</h2>
+          {open.context && <p class="qcard__context">{open.context}</p>}
+
+          {open.solution ? (
+            <details class="solution">
+              <summary class="solution__bar">
+                <span class="solution__hint">Solution hidden so you can try it first</span>
+                <span class="btn btn--secondary btn--small solution__show">Show solution</span>
+                <span class="btn btn--secondary btn--small solution__hide">Hide solution</span>
+              </summary>
+              <div class="solution__body">{open.solution}</div>
+            </details>
+          ) : (
+            <p class="solution__bar solution__none">No solution yet.</p>
+          )}
+
+          <div class="qcard__foot">
+            <span>
+              {open.is_anonymous || !open.author_name ? 'Posted anonymously' : `Posted by ${open.author_name}`}
+              {' · '}{recruitingSeason(open.created_at)}
+            </span>
+            <span class="qcard__actions">
+              <form method="post">
+                <input type="hidden" name="intent" value="vote" />
+                <input type="hidden" name="id" value={open.id} />
+                <input type="hidden" name="on" value={open.i_upvoted ? '0' : '1'} />
+                <button class="pill" type="submit" aria-pressed={open.i_upvoted ? 'true' : 'false'}>
+                  <span aria-hidden="true">▲</span> Upvote · {open.upvotes}
+                </button>
+              </form>
+              <form method="post">
+                <input type="hidden" name="intent" value="asked" />
+                <input type="hidden" name="id" value={open.id} />
+                <input type="hidden" name="on" value={open.i_asked_too ? '0' : '1'} />
+                <button class="pill" type="submit" aria-pressed={open.i_asked_too ? 'true' : 'false'}>
+                  I got asked this too · {open.asked_too}
+                </button>
+              </form>
+            </span>
+          </div>
+          {(open.is_mine || isPresident) && (
+            <div class="qcard__owner">
+              {open.is_mine && <a href={`/portal/problem-bank/${open.id}/edit`}>Edit</a>}
+              <a href={`/portal/problem-bank/${open.id}/delete`}>Delete</a>
+            </div>
+          )}
+        </article>
+      ) : (
+        <p class="box empty">
+          {filtered ? <>No questions match. <a href="/portal/problem-bank">Clear filters</a></> : 'No questions yet. Be the first to add one.'}
+        </p>
+      )}
+
+      {rest.length > 0 && (
+        <div class="box">
+          {rest.map((x) => <QuestionRow question={x} href={withParams({ open: x.id }, '#question')} meta />)}
+        </div>
+      )}
+    </section>
+
+    <aside class="pb__side box" id="submit" aria-labelledby="submit-h">
+      <form class="submit" method="post" action="/portal/problem-bank#submit">
+        <h2 class="h2" id="submit-h">Submit a question</h2>
+        {formError && <p class="alert alert--error" role="alert">{formError}</p>}
+        <input type="hidden" name="intent" value="submit" />
+        <QuestionFields values={formValues} companies={companies} />
+        <p class="note">Your question is visible to every member right away. Don't post anything you agreed to keep confidential.</p>
+        <button class="btn btn--block" type="submit">Post question</button>
+      </form>
+    </aside>
+  </div>
+</PortalLayout>
+
+<script>
+  // Apply select filters as soon as they change. The Search button still
+  // works without JavaScript.
+  const form = document.querySelector<HTMLFormElement>('[data-filters]');
+  form?.querySelectorAll('select').forEach((s) => s.addEventListener('change', () => form.requestSubmit()));
+</script>
+
+<style>
+  .pb { display: flex; flex-wrap: wrap; gap: 28px; align-items: flex-start; }
+  .pb__main { flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 14px; }
+  .pb__side { flex: 1 1 320px; min-width: 0; padding: 20px; }
+
+  .filters { display: flex; flex-wrap: wrap; gap: 10px; }
+  .filters .input, .filters .select { height: 42px; width: auto; }
+  .filters__search { flex: 1 1 280px; }
+  .filters .select { flex: 0 1 auto; max-width: 100%; font-size: 14px; }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+
+  .qcard { border: 1px solid var(--navy); padding: 20px; display: flex; flex-direction: column; gap: 12px; scroll-margin-top: 16px; }
+    .qcard__title { font-size: 18px; font-weight: 600; line-height: 1.4; overflow-wrap: anywhere; white-space: pre-line; }
+  .qcard__context { font-size: 15px; line-height: 1.6; color: var(--plain-tag-fg); white-space: pre-line; overflow-wrap: anywhere; }
+
+  .solution__bar {
+    border: 1px dashed var(--chip-border); padding: 10px 14px; background: #fafaf8;
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px;
+    list-style: none; cursor: pointer;
+  }
+  .solution__bar::-webkit-details-marker { display: none; }
+  .solution__hint { font-size: 14px; color: var(--secondary); }
+  .solution__hide { display: none; }
+  .solution[open] .solution__show { display: none; }
+  .solution[open] .solution__hide { display: inline-flex; }
+  .solution[open] .solution__hint { visibility: hidden; }
+  .solution__body {
+    border: 1px dashed var(--chip-border); border-top: 0; padding: 14px;
+    font-size: 15px; line-height: 1.6; white-space: pre-line; overflow-wrap: anywhere;
+  }
+  .solution__none { cursor: default; font-size: 14px; color: var(--secondary); }
+
+  .qcard__foot {
+    display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px;
+    font-size: 13px; color: var(--muted);
+  }
+  .qcard__actions { display: flex; flex-wrap: wrap; gap: 8px; }
+  .qcard__owner { display: flex; gap: 20px; font-size: 13px; border-top: 1px solid var(--rule-soft); padding-top: 12px; }
+
+  .submit { display: flex; flex-direction: column; gap: 14px; }
+
+  @media (max-width: 640px) {
+    .pb__side { padding: 20px 16px; }
+    .qcard { padding: 20px 16px; }
+    .filters .select { flex: 1 1 140px; }
+  }
+</style>

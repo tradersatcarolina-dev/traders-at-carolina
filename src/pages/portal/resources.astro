@@ -1,0 +1,54 @@
+---
+import PortalLayout from '../../layouts/PortalLayout.astro';
+import { hostname, type Resource } from '../../lib/portal';
+
+export const prerender = false;
+
+const { data } = await Astro.locals.supabase
+  .from('resources')
+  .select('*')
+  .order('category')
+  .order('sort_order')
+  .order('title');
+const resources = (data ?? []) as Resource[];
+
+// Group by category, keeping "Practice tools" first.
+const groups = new Map<string, Resource[]>();
+for (const r of resources) groups.set(r.category, [...(groups.get(r.category) ?? []), r]);
+const categories = [...groups.keys()].sort((a, b) =>
+  a === 'Practice tools' ? -1 : b === 'Practice tools' ? 1 : a.localeCompare(b),
+);
+---
+
+<PortalLayout title="Resources">
+  <div>
+    <h1 class="page-title serif">Resources</h1>
+    <p class="page-lede">Practice tools, reading and shared files the board recommends.</p>
+  </div>
+
+  {categories.length === 0 && <p class="box empty">No resources yet. A club president can add them in Supabase.</p>}
+
+  {categories.map((cat) => (
+    <section class="section" aria-labelledby={`cat-${cat}`}>
+      <h2 class="h2" id={`cat-${cat}`}>{cat}</h2>
+      <div class="grid">
+        {groups.get(cat)!.map((r) => (
+          <a class="card box" href={r.url} target="_blank" rel="noopener noreferrer">
+            <span class="card__title">{r.title} <span aria-hidden="true">↗</span><span class="visually-hidden"> (opens in a new tab)</span></span>
+            {r.description && <span class="card__desc">{r.description}</span>}
+            <span class="card__url">{hostname(r.url)}</span>
+          </a>
+        ))}
+      </div>
+    </section>
+  ))}
+</PortalLayout>
+
+<style>
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+  .card { padding: 16px 18px; text-decoration: none; color: var(--ink); display: flex; flex-direction: column; gap: 6px; }
+  .card:hover { color: var(--ink); }
+  .card__title { font-weight: 600; font-size: 15px; }
+  .card__desc { font-size: 13px; color: var(--secondary); }
+  .card__url { margin-top: auto; padding-top: 6px; font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
+</style>

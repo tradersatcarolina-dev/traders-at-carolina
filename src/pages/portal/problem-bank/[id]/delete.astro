@@ -1,0 +1,45 @@
+---
+import PortalLayout from '../../../../layouts/PortalLayout.astro';
+import type { Question } from '../../../../lib/portal';
+
+export const prerender = false;
+
+// Authors can delete their own questions; presidents can delete any.
+// RLS enforces this; the page just asks for confirmation first.
+const { supabase, profile } = Astro.locals;
+const id = Astro.params.id ?? '';
+if (!/^[0-9a-f-]{36}$/i.test(id)) return Astro.redirect('/portal/problem-bank');
+
+const { data } = await supabase.from('question_feed').select('*').eq('id', id).maybeSingle();
+const question = data as Question | null;
+const allowed = question && (question.is_mine || profile.role === 'president');
+if (!allowed) return Astro.redirect('/portal/problem-bank');
+
+let error = '';
+if (Astro.request.method === 'POST') {
+  const { error: err, count } = await supabase.from('questions').delete({ count: 'exact' }).eq('id', id);
+  if (!err && count) return Astro.redirect('/portal/problem-bank');
+  error = "We couldn't delete this question. Please try again.";
+}
+---
+
+<PortalLayout title="Delete question">
+  <div class="del box">
+    <h1 class="h2">Delete this question?</h1>
+    <p class="del__q">“{question.body}”</p>
+    <p class="del__meta">{question.company} · {question.category} · {question.upvotes} upvotes</p>
+    <p>This removes it, its solution and its votes for everyone. It can't be undone.</p>
+    {error && <p class="alert alert--error" role="alert">{error}</p>}
+    <form method="post" class="del__actions">
+      <button class="btn btn--danger" type="submit">Delete question</button>
+      <a class="btn btn--secondary" href={`/portal/problem-bank?open=${id}#question`}>Keep it</a>
+    </form>
+  </div>
+</PortalLayout>
+
+<style>
+  .del { max-width: 640px; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+  .del__q { font-size: 16px; font-weight: 500; overflow-wrap: anywhere; }
+  .del__meta { font-size: 13px; color: var(--muted); }
+  .del__actions { display: flex; flex-wrap: wrap; gap: 12px; }
+</style>

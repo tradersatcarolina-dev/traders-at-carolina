@@ -1,0 +1,24 @@
+/* Self-hosted Clarity City, shared by the public site (global.css) and the
+   members' area (members.css) so both use exactly the same fonts. */
+@font-face {
+  font-family: 'Clarity City';
+  src: url('/fonts/clarity-city/ClarityCity-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Clarity City';
+  src: url('/fonts/clarity-city/ClarityCity-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Clarity City';
+  src: url('/fonts/clarity-city/ClarityCity-SemiBold.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+

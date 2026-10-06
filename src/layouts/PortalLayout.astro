@@ -1,0 +1,131 @@
+---
+// Layout for every signed-in page under /portal.
+import MembersHead from './MembersHead.astro';
+
+interface Props {
+  title: string;
+}
+const { title } = Astro.props;
+const { profile, user } = Astro.locals;
+
+const NAV = [
+  { href: '/portal', label: 'Home' },
+  { href: '/portal/resources', label: 'Resources' },
+  { href: '/portal/problem-bank', label: 'Problem Bank' },
+  { href: '/portal/slides', label: 'Slides' },
+];
+const path = Astro.url.pathname.replace(/\/$/, '') || '/';
+const isActive = (href: string) => (href === '/portal' ? path === href : path === href || path.startsWith(href + '/'));
+
+const name = profile.full_name?.trim() || user?.email?.split('@')[0] || '';
+const initials =
+  name
+    .split(/[\s._-]+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0]!.toUpperCase())
+    .join('') || '?';
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <MembersHead title={title} />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <header class="top">
+      <div class="top__inner">
+        <a class="top__wordmark serif" href="/portal">Traders at Carolina</a>
+        <nav class="top__nav" aria-label="Members' area">
+          {NAV.map((n) => (
+            <a href={n.href} class:list={{ 'is-active': isActive(n.href) }} aria-current={isActive(n.href) ? 'page' : undefined}>
+              {n.label}
+            </a>
+          ))}
+        </nav>
+        <details class="menu" data-menu>
+          <summary class="menu__avatar" aria-label={`Account menu for ${name}`}>{initials}</summary>
+          <div class="menu__panel">
+            <p class="menu__who">{name}<span>{user?.email}</span></p>
+            <a href="/portal/profile">Profile</a>
+            <form method="post" action="/auth/logout">
+              <button type="submit">Log out</button>
+            </form>
+          </div>
+        </details>
+      </div>
+    </header>
+    <main id="main" class="page">
+      <slot />
+    </main>
+    <script>
+      // Close the account menu on Escape or a click outside it.
+      const menu = document.querySelector<HTMLDetailsElement>('[data-menu]');
+      if (menu) {
+        document.addEventListener('click', (e) => {
+          if (menu.open && !menu.contains(e.target as Node)) menu.open = false;
+        });
+        document.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape' && menu.open) {
+            menu.open = false;
+            menu.querySelector('summary')?.focus();
+          }
+        });
+      }
+    </script>
+  </body>
+</html>
+
+<style is:global>
+  .top { background: var(--navy); color: var(--white); }
+  .top__inner {
+    max-width: 1240px; margin: 0 auto; padding: 0 32px; min-height: 64px;
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 32px;
+  }
+  .top__wordmark { font-size: 21px; color: var(--white); text-decoration: none; }
+  .top__wordmark:hover { color: var(--white); }
+  /* Nav sits on the right, next to the avatar. */
+  .top__nav { display: flex; flex-wrap: wrap; gap: 4px 26px; font-size: 14px; margin-left: auto; }
+  .top__nav a { color: #d5daec; text-decoration: none; padding: 12px 0; border-bottom: 2px solid transparent; }
+  .top__nav a:hover { color: var(--white); }
+  .top__nav a.is-active { color: var(--white); border-bottom-color: var(--white); }
+
+  .menu { position: relative; }
+  .menu__avatar {
+    list-style: none; cursor: pointer;
+    width: 34px; height: 34px; border-radius: 50%;
+    border: 1px solid #8c97c4; background: #2d3a6b; color: var(--white);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--serif); font-weight: 400; font-size: 15px; line-height: 1;
+  }
+  .menu__avatar::-webkit-details-marker { display: none; }
+  .menu__panel {
+    position: absolute; right: 0; top: calc(100% + 10px); z-index: 20;
+    min-width: 220px; background: var(--white); border: 1px solid var(--rule);
+    display: flex; flex-direction: column; padding: 6px 0;
+  }
+  .menu__who { padding: 10px 16px 12px; border-bottom: 1px solid var(--rule-soft); margin-bottom: 6px; font-weight: 600; color: var(--ink); }
+  .menu__who span { display: block; font-weight: 400; font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+  .menu__panel a, .menu__panel button {
+    display: block; width: 100%; text-align: left; padding: 10px 16px;
+    font: inherit; font-size: 14px; color: var(--ink); text-decoration: none;
+    background: none; border: 0; cursor: pointer;
+  }
+  .menu__panel a:hover, .menu__panel button:hover { color: var(--ink); outline-offset: -2px; }
+
+  .page { max-width: 1240px; margin: 0 auto; padding: 40px 32px 64px; display: flex; flex-direction: column; gap: 32px; }
+  .page-title { font-size: clamp(30px, 3.2vw, 40px); line-height: 1.1; }
+  .page-lede { margin-top: 6px; font-size: 15px; color: var(--secondary); max-width: 680px; }
+  .h2 { font-family: var(--serif); font-weight: 400; font-size: 24px; line-height: 1.15; }
+  .section { display: flex; flex-direction: column; gap: 14px; }
+  .section__head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; }
+  .section__head a:not(.btn) { font-size: 14px; }
+
+  @media (max-width: 640px) {
+    .top__inner { padding: 12px 16px; }
+    .top__wordmark { font-size: 19px; }
+    .top__nav { order: 3; width: 100%; gap: 0 20px; margin-left: 0; }
+    .page { padding: 28px 16px 48px; gap: 28px; }
+  }
+</style>

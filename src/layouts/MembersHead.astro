@@ -1,0 +1,23 @@
+---
+// <head> contents shared by the auth pages and the portal.
+import '../styles/members.css';
+
+interface Props {
+  title: string;
+}
+const { title } = Astro.props;
+---
+
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex" />
+<title>{title} · Traders at Carolina</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+<!-- Same font files as the public site (see Base.astro). -->
+<link rel="preload" href="/fonts/clarity-city/ClarityCity-Regular.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400&family=IBM+Plex+Mono:wght@400&display=swap"
+/>

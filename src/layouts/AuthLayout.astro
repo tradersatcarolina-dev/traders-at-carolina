@@ -1,0 +1,72 @@
+---
+// Split layout for /login and the account pages: photo collage under a navy
+// overlay on the left, the form on the right. Stacks on phones.
+import MembersHead from './MembersHead.astro';
+
+interface Props {
+  title: string;
+}
+const { title } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <MembersHead title={title} />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <div class="auth">
+      <div class="auth__photo">
+        <img src="/images/members/collage.jpg" alt="" width="1100" height="1235" />
+        <div class="auth__overlay" aria-hidden="true"></div>
+        <a class="auth__wordmark serif" href="/">Traders at Carolina</a>
+        <div class="auth__copy">
+          <p class="auth__heading serif">Members Only</p>
+        </div>
+      </div>
+      <main id="main" class="auth__main">
+        <div class="auth__col">
+          <slot />
+        </div>
+      </main>
+    </div>
+  </body>
+</html>
+
+<style is:global>
+  .auth { min-height: 100vh; display: flex; flex-wrap: wrap; }
+  .auth__photo {
+    flex: 1 1 480px; position: relative; min-height: 420px; overflow: hidden;
+    background: var(--navy);
+    display: flex; flex-direction: column; justify-content: space-between;
+    padding: 32px 40px 44px;
+  }
+  .auth__photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .auth__overlay { position: absolute; inset: 0; background: rgba(23, 32, 66, 0.55); }
+  .auth__wordmark { position: relative; align-self: flex-start; font-size: 23px; line-height: 1; color: var(--white); text-decoration: none; }
+  .auth__wordmark:hover { color: var(--white); }
+  .auth__copy { position: relative; max-width: 560px; }
+  .auth__heading { font-size: clamp(32px, 3.4vw, 48px); line-height: 1.1; color: var(--white); }
+
+  .auth__main { flex: 1 1 480px; display: flex; align-items: center; justify-content: center; padding: 64px 32px; }
+  .auth__col { width: 100%; max-width: 380px; display: flex; flex-direction: column; gap: 18px; }
+  .auth__title { font-size: clamp(36px, 3.6vw, 46px); line-height: 1.1; margin-bottom: 6px; }
+  .auth__lede { font-size: 15px; color: var(--secondary); }
+  .auth__form { display: flex; flex-direction: column; gap: 16px; }
+  .auth__footer {
+    border-top: 1px solid var(--rule); padding-top: 18px;
+    display: flex; flex-direction: column; gap: 6px; font-size: 14px; color: var(--secondary);
+  }
+  .auth__small-link { font-size: 14px; font-weight: 500; }
+
+  @media (max-width: 640px) {
+    .auth { align-content: flex-start; }
+    .auth__photo { flex-basis: 100%; min-height: 200px; padding: 22px 16px 26px; }
+    .auth__main { align-items: flex-start; }
+    .auth__wordmark { font-size: 21px; }
+    .auth__heading { font-size: 32px; }
+    .auth__main { padding: 40px 16px 56px; }
+    .auth__title { font-size: 34px; }
+  }
+</style>

@@ -1,0 +1,54 @@
+---
+import PortalLayout from '../../layouts/PortalLayout.astro';
+import { longDate, sessionLabel, type Session } from '../../lib/portal';
+
+export const prerender = false;
+
+const { data } = await Astro.locals.supabase
+  .from('sessions')
+  .select('*')
+  .lt('date', new Date().toISOString())
+  .order('date', { ascending: false });
+const sessions = (data ?? []) as Session[];
+---
+
+<PortalLayout title="Slides">
+  <div>
+    <h1 class="page-title serif">Slides</h1>
+    <p class="page-lede">Slides and recordings from past sessions, newest first.</p>
+  </div>
+
+  <div class="box">
+    {sessions.length === 0 && <p class="empty">Slides will appear here after each session.</p>}
+    {sessions.map((s) => (
+      <div class="session">
+        <div class="session__main">
+          <h2 class="session__title">{sessionLabel(s)}</h2>
+          <p class="session__meta">{longDate(s.date)}{s.location && ` · ${s.location}`}</p>
+        </div>
+        <div class="session__links">
+          {s.slides_url && (
+            <a class="pill" href={s.slides_url} target="_blank" rel="noopener noreferrer">Slides <span aria-hidden="true">↗</span><span class="visually-hidden"> (opens in a new tab)</span></a>
+          )}
+          {s.recording_url && (
+            <a class="pill" href={s.recording_url} target="_blank" rel="noopener noreferrer">Recording <span aria-hidden="true">↗</span><span class="visually-hidden"> (opens in a new tab)</span></a>
+          )}
+          {!s.slides_url && !s.recording_url && <span class="session__none">Materials coming soon</span>}
+        </div>
+      </div>
+    ))}
+  </div>
+</PortalLayout>
+
+<style>
+  .session {
+    display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px 24px;
+    padding: 14px 18px; border-bottom: 1px solid var(--rule-soft);
+  }
+  .session:last-child { border-bottom: 0; }
+  .session__main { flex: 1 1 320px; min-width: 0; }
+  .session__title { font-size: 15px; font-weight: 600; }
+  .session__meta { margin-top: 2px; font-size: 13px; color: var(--muted); }
+  .session__links { display: flex; flex-wrap: wrap; gap: 10px; }
+  .session__none { font-size: 13px; color: var(--muted); }
+</style>

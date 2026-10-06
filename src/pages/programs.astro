@@ -1,0 +1,331 @@
+---
+import Base from '../layouts/Base.astro';
+import Gallery from '../components/Gallery.astro';
+import Icon from '../components/Icon.astro';
+import site from '../data/site.json';
+import events from '../data/events.json';
+import board from '../data/board.json';
+import resources from '../data/resources.json';
+import { todayISO, isPast, isSoon, shortDate } from '../lib/dates';
+
+const today = todayISO();
+
+// Events without a date ("details to come") always show, after dated ones.
+const upcoming = events
+  .filter((e) => !e.date || !isPast(e.date, today))
+  .sort((a, b) => (a.date || '9999').localeCompare(b.date || '9999'));
+
+const columns = [
+  { key: 'signups', title: 'Sign-up deadlines' },
+  { key: 'competitions', title: 'Open competitions' },
+  { key: 'industry', title: 'Industry events' },
+].map((c) => ({
+  ...c,
+  // Items without a deadline (rolling sign-up) always show, after dated ones.
+  items: board
+    .filter((b) => b.column === c.key && (!b.deadline || !isPast(b.deadline, today)))
+    .sort((a, b) => (a.deadline || '9999').localeCompare(b.deadline || '9999')),
+}));
+
+const tagLabel = (tag: string) => (tag === 'members' ? 'Members only' : 'Open to all');
+---
+
+<Base title="Programs" description="Events Traders at Carolina is hosting, plus sign-up deadlines, open competitions, industry events and free prep resources.">
+  <Gallery layout="strip" offset={7} class="page-header page-header--programs">
+    <div class="container">
+      <h1 class="h-page">Programs</h1>
+      <p class="header-sub">What we're hosting, plus every deadline and opportunity worth knowing about.</p>
+    </div>
+  </Gallery>
+
+  <!-- What we're hosting -->
+  <section class="section" aria-labelledby="hosting-title">
+    <div class="container">
+      <div class="head-row">
+        <h2 class="h-section" id="hosting-title">What we're hosting</h2>
+        <span class="mono term">{site.currentTerm}</span>
+      </div>
+
+      <ul class="events" data-events>
+        {upcoming.map((e) => {
+          // Cards without an RSVP link aren't clickable yet.
+          const Card = e.rsvpUrl ? 'a' : 'div';
+          const linkProps = e.rsvpUrl ? { href: e.rsvpUrl, target: '_blank', rel: 'noopener noreferrer' } : {};
+          const where = [e.location, e.time].filter(Boolean).join(' · ');
+          return (
+            <li data-date={e.date || undefined}>
+              <Card class:list={['event', { 'event--static': !e.rsvpUrl }]} {...linkProps}>
+                <div class="event__photo">
+                  <img src={e.photo} alt="" width="1200" height="675" loading="lazy" decoding="async" />
+                </div>
+                <div class="event__body">
+                  <div class="event__meta">
+                    {e.date
+                      ? <time class="mono event__date" datetime={e.date}>{shortDate(e.date)}</time>
+                      : <span class="mono event__date">Date TBA</span>}
+                    {e.tag && <span class:list={['tag', { 'tag--members': e.tag === 'members' }]}>{tagLabel(e.tag)}</span>}
+                  </div>
+                  <h3 class="event__title">{e.title}</h3>
+                  {e.description && <p class="event__desc">{e.description}</p>}
+                  {where && <p class="event__where">{where}</p>}
+                  {e.rsvpUrl && <span class="event__rsvp">RSVP <span aria-hidden="true">→</span><span class="visually-hidden"> (opens in a new tab)</span></span>}
+                </div>
+              </Card>
+            </li>
+          );
+        })}
+      </ul>
+      <p class="empty" data-events-empty hidden={upcoming.length > 0}>
+        Nothing scheduled right now. Check back soon, or follow us on Instagram for announcements.
+      </p>
+    </div>
+  </section>
+
+  <!-- Opportunities board -->
+  <section class="section section--wash" aria-labelledby="board-title">
+    <div class="container">
+      <h2 class="h-section" id="board-title">Opportunities board</h2>
+      <p class="intro">Sign-up deadlines, competitions open to every student, and industry events, kept up to date by the board. Click any card to go straight to it.</p>
+
+      <div class="board" data-board>
+        {columns.map((col) => (
+          <section class="board__col" aria-labelledby={`col-${col.key}`} data-board-col>
+            <header class="board__head">
+              <h3 id={`col-${col.key}`}>{col.title}</h3>
+              <span class="mono board__count" data-board-count>{col.items.length}</span>
+            </header>
+            <ul class="board__list">
+              {col.items.map((item) => (
+                <li data-deadline={item.deadline || undefined}>
+                  <a class="opp" href={item.url} target="_blank" rel="noopener noreferrer">
+                    <span class="opp__text">
+                      <span class="opp__title">{item.title}</span>
+                      <span class="opp__org">{item.org}</span>
+                      <span class:list={['chip', { 'is-soon': item.deadline && isSoon(item.deadline, today) }]} data-chip>
+                        {item.deadline ? `${item.deadlineLabel} ${shortDate(item.deadline)}` : item.deadlineLabel}
+                      </span>
+                    </span>
+                    <span class="opp__arrow" aria-hidden="true">↗</span>
+                    <span class="visually-hidden">(opens in a new tab)</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+            <p class="board__empty" data-board-empty hidden={col.items.length > 0}>Nothing open right now.</p>
+          </section>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- Prep resources -->
+  <section class="section" aria-labelledby="resources-title">
+    <div class="container">
+      <h2 class="h-section" id="resources-title">Prep resources</h2>
+      {resources.length === 0 ? (
+        <p class="intro">We will update this section with study materials as the semester progresses.</p>
+      ) : (
+        <>
+          <p class="intro">Free and open to everyone, no account needed.</p>
+          <ul class="resources">
+            {resources.map((r) => (
+              <li>
+                <a class="resource" href={r.url}>
+                  <span class="resource__title">{r.title}</span>
+                  <span class="mono resource__type">{r.type}</span>
+                  <span class="resource__arrow"><Icon name="arrow" size={20} /></span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </div>
+  </section>
+
+  <section class="band on-dark">
+    <div class="container">
+      <h2>Traders at Carolina</h2>
+      <a class="btn btn--white" href={site.googleFormUrl} target="_blank" rel="noopener noreferrer">
+        Interest form <span aria-hidden="true">↗</span><span class="visually-hidden"> (opens in a new tab)</span>
+      </a>
+    </div>
+  </section>
+</Base>
+
+<script>
+  // Re-check deadlines in the browser so the board stays correct between deploys.
+  import { todayISO, isPast, isSoon } from '../lib/dates';
+  const today = todayISO();
+
+  document.querySelectorAll<HTMLElement>('[data-board-col]').forEach((col) => {
+    let count = 0;
+    col.querySelectorAll<HTMLElement>('.board__list > li').forEach((li) => {
+      const d = li.dataset.deadline;
+      if (!d) { count++; return; } // rolling sign-up: always shown
+      const past = isPast(d, today);
+      li.hidden = past;
+      if (!past) count++;
+      li.querySelector('[data-chip]')?.classList.toggle('is-soon', isSoon(d, today));
+    });
+    const countEl = col.querySelector('[data-board-count]');
+    if (countEl) countEl.textContent = String(count);
+    const empty = col.querySelector<HTMLElement>('[data-board-empty]');
+    if (empty) empty.hidden = count > 0;
+  });
+
+  const eventItems = document.querySelectorAll<HTMLElement>('[data-events] > li');
+  let shown = 0;
+  eventItems.forEach((li) => {
+    if (li.dataset.date) li.hidden = isPast(li.dataset.date, today);
+    if (!li.hidden) shown++;
+  });
+  const eventsEmpty = document.querySelector<HTMLElement>('[data-events-empty]');
+  if (eventsEmpty) eventsEmpty.hidden = shown > 0;
+</script>
+
+<style>
+  :global(.page-header--programs) { min-height: 280px; }
+  .header-sub {
+    margin-top: 12px;
+    max-width: 40ch;
+    font-size: 17px;
+    line-height: 1.5;
+    color: var(--white);
+  }
+  .intro { margin-top: 14px; max-width: 64ch; }
+  [hidden] { display: none !important; }
+
+  /* What we're hosting */
+  .head-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px 32px;
+  }
+  .term { color: var(--muted); }
+  .events {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 22px;
+    margin: 36px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .events li { display: flex; }
+  .event {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    border: 1px solid var(--rule);
+    color: inherit;
+    text-decoration: none;
+    transition: border-color 0.15s ease;
+  }
+  .event:hover, .event:focus-visible { border-color: var(--blue); }
+  .event--static:hover { border-color: var(--rule); }
+  .event__photo { aspect-ratio: 16 / 9; overflow: hidden; background: var(--rule); }
+  .event__photo img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.6s cubic-bezier(0.2, 0.7, 0.2, 1); }
+  a.event:hover .event__photo img { transform: scale(1.04); }
+  .opp { transition: border-color 0.15s ease, transform 0.2s ease; }
+  .opp:hover { transform: translateY(-2px); }
+  .event__body { display: flex; flex-direction: column; flex: 1; padding: 18px 20px 20px; }
+  .event__meta { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+  .event__date { color: var(--blue); }
+  .event__title { margin-top: 12px; font-size: 23px; }
+  .event__desc { margin-top: 8px; font-size: 14.5px; line-height: 1.55; }
+  .event__where { margin-top: 8px; font-size: 13px; color: var(--muted); }
+  .event__rsvp {
+    margin-top: auto;
+    padding-top: 16px;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--navy);
+  }
+  .event:hover .event__rsvp { color: var(--blue); }
+  .empty { margin-top: 40px; color: var(--muted); }
+  @media (max-width: 1000px) { .events { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 640px) { .events { grid-template-columns: minmax(0, 1fr); } }
+
+  /* Opportunities board */
+  .board {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 22px;
+    margin-top: 36px;
+  }
+  .board__head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--navy);
+  }
+  .board__head h3 { font-size: 22px; }
+  .board__count { color: var(--muted); }
+  .board__list {
+    display: grid;
+    gap: 8px;
+    margin: 14px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .opp {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 13px 16px;
+    background: var(--white);
+    border: 1px solid var(--rule);
+    color: inherit;
+    text-decoration: none;
+  }
+  .opp:hover, .opp:focus-visible { border-color: var(--blue); }
+  .opp__text { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-width: 0; }
+  .opp__title { font-weight: 600; color: var(--ink); line-height: 1.4; font-size: 14.5px; }
+  .opp__org { font-size: 13px; color: var(--muted); line-height: 1.45; }
+  .opp .chip { margin-top: 7px; }
+  .opp__arrow { color: var(--blue); font-size: 18px; line-height: 1.2; }
+  .board__empty { margin-top: 20px; font-size: 15px; color: var(--muted); }
+  @media (max-width: 900px) { .board { grid-template-columns: minmax(0, 1fr); gap: 32px; } }
+
+  /* Prep resources */
+  .resources {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    column-gap: 32px;
+    margin: 30px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .resource {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: 'title arrow' 'type arrow';
+    align-items: center;
+    gap: 4px 16px;
+    padding: 15px 0;
+    border-bottom: 1px solid var(--rule);
+    color: inherit;
+    text-decoration: none;
+  }
+  .resources li:nth-child(-n + 3) .resource { border-top: 1px solid var(--rule); }
+  .resource__title { grid-area: title; font-family: var(--serif); font-size: 21px; line-height: 1.2; color: var(--ink); }
+  .resource__type { grid-area: type; color: var(--blue); font-size: 11px; }
+  .resource__arrow { grid-area: arrow; display: inline-flex; color: var(--ink); transition: transform 0.15s ease; }
+  .resource:hover .resource__title { color: var(--blue); }
+  .resource:hover .resource__arrow { transform: translateX(4px); color: var(--blue); }
+  @media (max-width: 1000px) {
+    .resources { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .resources li:nth-child(3) .resource { border-top: 0; }
+  }
+  @media (max-width: 640px) {
+    .resources { grid-template-columns: minmax(0, 1fr); }
+    .resources li:nth-child(2) .resource { border-top: 0; }
+  }
+</style>

@@ -1,0 +1,26 @@
+[
+  {
+    "column": "competitions",
+    "title": "Columbia Trading Tournament",
+    "org": "Columbia Quant Group · In person in NYC, Dec 5–6 · Undergrads at any US school",
+    "deadline": "2026-10-23",
+    "deadlineLabel": "Apply by",
+    "url": "https://www.columbiaquantgroup.com/competition"
+  },
+  {
+    "column": "competitions",
+    "title": "Susquehanna Predictions Cup",
+    "org": "SIG · Online election prediction markets · Any university student",
+    "deadline": "2026-11-04",
+    "deadlineLabel": "Closes",
+    "url": "https://predictionscup.com/"
+  },
+  {
+    "column": "competitions",
+    "title": "Citadel Women's Datathon",
+    "org": "Citadel · Data analysis competition, Feb 2027",
+    "deadline": "2027-01-11",
+    "deadlineLabel": "Apply by",
+    "url": "https://www.citadel.com/careers/programs-and-events/datathons/apply-womens-datathon/"
+  }
+]

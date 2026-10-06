@@ -1,0 +1,85 @@
+---
+import Icon from './Icon.astro';
+
+interface Props { name: string; role?: string; photo?: string; linkedin?: string; email?: string }
+const { name, role, photo, linkedin, email } = Astro.props;
+
+const initials = name
+  .replace(/[\[\]]/g, '')
+  .split(/\s+/)
+  .filter(Boolean)
+  .map((w) => w[0])
+  .slice(0, 2)
+  .join('')
+  .toUpperCase();
+---
+
+<li class="person">
+  <div class="person__photo">
+    {photo ? (
+      <img src={photo} alt={`Headshot of ${name}`} width="600" height="600" loading="lazy" decoding="async" />
+    ) : (
+      <span class="person__initials" aria-hidden="true">{initials}</span>
+    )}
+  </div>
+  <h3 class="person__name">{name}</h3>
+  {role && <p class="person__role">{role}</p>}
+  {(linkedin || email) && (
+    <div class="person__links">
+      {linkedin && (
+        <a href={linkedin} target="_blank" rel="noopener noreferrer" aria-label={`${name} on LinkedIn`}>
+          <Icon name="linkedin" />
+        </a>
+      )}
+      {email && (
+        <a href={`mailto:${email}`} aria-label={`Email ${name}`}>
+          <Icon name="email" />
+        </a>
+      )}
+    </div>
+  )}
+</li>
+
+<style>
+  .person { display: flex; flex-direction: column; }
+  .person__photo {
+    position: relative;
+    aspect-ratio: 1 / 1;
+    overflow: hidden;
+    background: #5B6480;
+  }
+  .person__photo img { width: 100%; height: 100%; object-fit: cover; }
+  .person__initials {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--serif);
+    font-size: clamp(34px, 4vw, 52px);
+    color: var(--white);
+    letter-spacing: 0.02em;
+  }
+  .person__name {
+    margin-top: 12px;
+    font-size: 19px;
+    line-height: 1.25;
+  }
+  .person__role {
+    margin-top: 4px;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.4;
+    color: var(--blue);
+  }
+  .person__links { display: flex; gap: 4px; margin: 4px 0 0 -6px; }
+  .person__links a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    color: var(--muted);
+  }
+  .person__links a:hover { color: var(--blue); }
+</style>

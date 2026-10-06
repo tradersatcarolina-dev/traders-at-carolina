@@ -1,0 +1,159 @@
+---
+import site from '../data/site.json';
+import Icon from './Icon.astro';
+
+const path = Astro.url.pathname.replace(/\/$/, '') || '/';
+const links = [
+  { href: '/members', label: 'Members' },
+  { href: '/programs', label: 'Programs' },
+  { href: '/login', label: 'Log In' },
+];
+const isActive = (href: string) => path === href;
+---
+
+<header class="nav">
+  <div class="container nav__inner">
+    <a class="nav__wordmark" href="/">Traders at Carolina</a>
+
+    <button
+      class="nav__toggle"
+      type="button"
+      aria-expanded="false"
+      aria-controls="nav-menu"
+      data-nav-toggle
+    >
+      <span class="nav__toggle-open"><Icon name="menu" size={24} /></span>
+      <span class="nav__toggle-close"><Icon name="close" size={24} /></span>
+      <span class="visually-hidden">Menu</span>
+    </button>
+
+    <nav id="nav-menu" class="nav__menu" aria-label="Main">
+      <ul>
+        {links.map((l) => {
+          const active = isActive(l.href);
+          return (
+            <li>
+              <a href={l.href} class:list={['nav__link', { 'is-active': active }]} aria-current={active ? 'page' : undefined}>
+                {l.label}
+              </a>
+            </li>
+          );
+        })}
+        <li>
+          <a class="btn nav__join" href={site.googleFormUrl} target="_blank" rel="noopener noreferrer">
+            Join<span class="visually-hidden"> (opens in a new tab)</span>
+          </a>
+        </li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<style>
+  .nav {
+    position: relative;
+    z-index: 20;
+    background: var(--white);
+    border-bottom: 1px solid var(--rule);
+  }
+  .nav__inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 64px;
+  }
+  .nav__wordmark {
+    font-family: var(--serif);
+    font-size: 23px;
+    line-height: 1;
+    color: var(--ink);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .nav__menu ul {
+    display: flex;
+    align-items: center;
+    gap: 30px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .nav__link {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--ink);
+    text-decoration: none;
+    text-underline-offset: 6px;
+    text-decoration-thickness: 1.5px;
+  }
+  .nav__link:hover { color: var(--blue); }
+  .nav__link.is-active {
+    color: var(--blue);
+    font-weight: 600;
+    text-decoration: underline;
+  }
+  .nav__join { padding: 10px 18px; }
+
+  .nav__toggle {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    margin-right: -10px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .nav__toggle-open { display: inline-flex; }
+  .nav__toggle-close { display: none; }
+  .nav__toggle[aria-expanded='true'] .nav__toggle-open { display: none; }
+  .nav__toggle[aria-expanded='true'] .nav__toggle-close { display: inline-flex; }
+
+  @media (max-width: 767px) {
+    .nav__inner { min-height: 58px; }
+    .nav__wordmark { font-size: 21px; }
+    .nav__toggle { display: inline-flex; }
+    .nav__menu {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: var(--white);
+      border-bottom: 1px solid var(--rule);
+    }
+    .nav__menu.is-open { display: block; }
+    .nav__menu ul {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0;
+      padding: 8px var(--gutter) 24px;
+    }
+    .nav__menu li { border-top: 1px solid var(--rule); }
+    .nav__menu li:last-child { border-top: 0; padding-top: 16px; }
+    .nav__link { display: block; padding: 12px 0; font-size: 16px; }
+    .nav__join { width: 100%; padding: 13px 22px; }
+  }
+</style>
+
+<script>
+  const toggle = document.querySelector<HTMLButtonElement>('[data-nav-toggle]');
+  const menu = document.getElementById('nav-menu');
+  if (toggle && menu) {
+    const set = (open: boolean) => {
+      toggle.setAttribute('aria-expanded', String(open));
+      menu.classList.toggle('is-open', open);
+    };
+    toggle.addEventListener('click', () => set(toggle.getAttribute('aria-expanded') !== 'true'));
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && menu.classList.contains('is-open')) { set(false); toggle.focus(); }
+    });
+    menu.addEventListener('click', (e) => {
+      if ((e.target as HTMLElement).closest('a')) set(false);
+    });
+    window.matchMedia('(min-width: 768px)').addEventListener('change', (e) => { if (e.matches) set(false); });
+  }
+</script>

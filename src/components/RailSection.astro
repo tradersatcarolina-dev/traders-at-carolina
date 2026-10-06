@@ -1,0 +1,40 @@
+---
+/** Home-page section with the left label rail ("01 / ABOUT"). */
+interface Props { number: string; label: string; id?: string; wash?: boolean }
+const { number, label, id, wash = false } = Astro.props;
+const headingId = id ? `${id}-label` : undefined;
+---
+
+<section class:list={['section', { 'section--wash': wash }]} id={id}>
+  <div class="container rail">
+    <div class="rail__label" aria-hidden="true">
+      <span class="mono rail__num">{number}</span>
+      <span class="mono">{label}</span>
+    </div>
+    <div class="rail__body">
+      <slot />
+    </div>
+  </div>
+</section>
+
+<style>
+  .rail {
+    display: grid;
+    grid-template-columns: 170px minmax(0, 1fr);
+    gap: 48px;
+  }
+  .rail__label {
+    align-self: start;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding-top: 12px;
+    border-top: 2px solid var(--ink);
+    color: var(--muted);
+  }
+  .rail__num { color: var(--blue); }
+  @media (max-width: 900px) {
+    .rail { grid-template-columns: minmax(0, 1fr); gap: 22px; }
+    .rail__label { flex-direction: row; gap: 14px; max-width: 200px; }
+  }
+</style>

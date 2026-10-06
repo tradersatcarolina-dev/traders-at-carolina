@@ -1,0 +1,267 @@
+/* ---------- Fonts ---------- */
+@font-face {
+  font-family: 'Clarity City';
+  src: url('/fonts/clarity-city/ClarityCity-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Clarity City';
+  src: url('/fonts/clarity-city/ClarityCity-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Clarity City';
+  src: url('/fonts/clarity-city/ClarityCity-SemiBold.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ---------- Tokens ---------- */
+:root {
+  --navy: #263262;
+  --blue: #3657B0;
+  --ink: #161616;
+  --body: #4A4A4A;
+  --muted: #5A5A5A;
+  --rule: #E3E5EB;
+  --wash: #F6F7FA;
+  --white: #FFFFFF;
+  --overlay: rgba(28, 36, 74, 0.6);
+  --soon-bg: #FBE9E2;
+  --soon-fg: #9A3412;
+  --chip-bg: #EEF1F8;
+  --chip-fg: #263262;
+
+  --serif: 'Crimson Pro', Georgia, 'Times New Roman', serif;
+  --sans: 'Clarity City', system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+  --mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --max: 1240px;
+  --gutter: 32px;
+  --section-y: 76px;
+}
+@media (max-width: 600px) {
+  :root { --gutter: 16px; --section-y: 52px; }
+}
+
+/* ---------- Base ---------- */
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body {
+  margin: 0;
+  background: var(--white);
+  color: var(--body);
+  font-family: var(--sans);
+  font-size: 15.5px;
+  line-height: 1.65;
+  overflow-x: hidden;
+}
+@media (min-width: 900px) { body { font-size: 16px; } }
+img { display: block; max-width: 100%; }
+h1, h2, h3 {
+  font-family: var(--serif);
+  font-weight: 400;
+  color: var(--ink);
+  line-height: 1.1;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+p { margin: 0; }
+a { color: var(--blue); }
+a:focus-visible, button:focus-visible, input:focus-visible, summary:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 3px;
+}
+.on-dark a:focus-visible, .on-dark button:focus-visible { outline-color: var(--white); }
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0);
+  white-space: nowrap; border: 0;
+}
+.skip-link {
+  position: absolute; left: 16px; top: -100px; z-index: 100;
+  background: var(--navy); color: var(--white);
+  padding: 10px 16px; font-weight: 600; text-decoration: none;
+}
+.skip-link:focus { top: 12px; }
+
+.container {
+  width: 100%;
+  max-width: calc(var(--max) + var(--gutter) * 2);
+  margin: 0 auto;
+  padding-left: var(--gutter);
+  padding-right: var(--gutter);
+}
+.section { padding: var(--section-y) 0; }
+.section--wash { background: var(--wash); }
+
+.h-page { font-size: clamp(38px, 4.6vw, 60px); }
+.h-section { font-size: clamp(30px, 3.6vw, 44px); }
+.h-center { text-align: center; }
+
+.mono {
+  font-family: var(--mono);
+  font-weight: 400;
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  line-height: 1.4;
+}
+
+/* ---------- Buttons ---------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 13px 22px;
+  border: 1px solid var(--navy);
+  border-radius: 0;
+  background: var(--navy);
+  color: var(--white);
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.btn:hover { background: var(--blue); border-color: var(--blue); }
+.btn--white { background: var(--white); border-color: var(--white); color: var(--navy); }
+.btn--white:hover { background: var(--wash); border-color: var(--wash); color: var(--navy); }
+.btn--white-blue { background: var(--white); border-color: var(--white); color: var(--blue); }
+.btn--white-blue:hover { background: var(--wash); border-color: var(--wash); color: var(--blue); }
+.btn--outline-white { background: transparent; border-color: var(--white); color: var(--white); }
+.btn--outline-white:hover { background: var(--white); color: var(--navy); border-color: var(--white); }
+.btn--outline { background: var(--white); border-color: var(--navy); color: var(--navy); }
+.btn--outline:hover { background: var(--wash); color: var(--navy); border-color: var(--navy); }
+.btn--block { width: 100%; }
+
+/* ---------- Tags & chips ---------- */
+.tag {
+  display: inline-block;
+  padding: 3px 8px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  line-height: 1.4;
+  border: 1px solid var(--blue);
+  color: var(--blue);
+}
+.tag--members { background: var(--navy); border-color: var(--navy); color: var(--white); }
+
+.chip {
+  display: inline-block;
+  padding: 3px 8px;
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  line-height: 1.5;
+  background: var(--chip-bg);
+  color: var(--chip-fg);
+}
+.chip.is-soon { background: var(--soon-bg); color: var(--soon-fg); }
+
+/* ---------- Closing band ---------- */
+.band {
+  background: var(--navy);
+  color: var(--white);
+  padding: 72px 0;
+  text-align: center;
+}
+.band h2 { color: var(--white); font-size: clamp(30px, 3.6vw, 44px); }
+.band .btn { margin-top: 26px; }
+
+/* ---------- Photo gallery (shared by headers) ---------- */
+.gallery {
+  position: relative;
+  overflow: hidden;
+  background: var(--navy);
+}
+.gallery__grid {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  gap: 6px;
+}
+.gallery__tile {
+  position: relative;
+  overflow: hidden;
+  background: #3a4570;
+}
+.gallery__tile img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: opacity 1.6s ease;
+}
+.gallery__tile img.is-next { opacity: 0; }
+@media (prefers-reduced-motion: reduce) {
+  .gallery__tile img { transition: none; }
+}
+.gallery::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--overlay);
+  pointer-events: none;
+}
+.gallery__content {
+  position: relative;
+  z-index: 1;
+  color: var(--white);
+}
+.gallery__content h1, .gallery__content h2 { color: var(--white); }
+
+/* ---------- Inner-page header (gallery strip) ---------- */
+.page-header {
+  min-height: 320px;
+  display: flex;
+  align-items: flex-end;
+}
+.page-header .gallery__content { width: 100%; padding: 48px 0 40px; }
+.page-header--center { align-items: center; text-align: center; }
+@media (max-width: 600px) {
+  .page-header { min-height: 260px; }
+}
+
+/* ---------- Reveal-on-scroll animations ----------
+   Base.astro tags elements with [data-reveal]; when they scroll into view they
+   get .is-revealed. Uses `animation` (not `transition`) so it never clashes
+   with components' own hover transitions. Skipped for reduced-motion users. */
+@keyframes reveal-up {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: none; }
+}
+/* Content already on screen at load starts partly visible, so it counts as
+   painted straight away (keeps Largest Contentful Paint fast). */
+@keyframes reveal-in {
+  from { opacity: 0.35; transform: translateY(12px); }
+  to   { opacity: 1; transform: none; }
+}
+[data-reveal='below'] { opacity: 0; }
+[data-reveal].is-revealed {
+  opacity: 1;
+  animation: reveal-up 0.75s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+  animation-delay: var(--reveal-delay, 0ms);
+}
+[data-reveal='above'].is-revealed { animation-name: reveal-in; }
+@media (prefers-reduced-motion: reduce) {
+  [data-reveal='below'] { opacity: 1; }
+  [data-reveal].is-revealed { animation: none; }
+}

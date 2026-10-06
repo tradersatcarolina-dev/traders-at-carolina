@@ -1,0 +1,95 @@
+---
+import Base from '../layouts/Base.astro';
+import Gallery from '../components/Gallery.astro';
+import PersonCard from '../components/PersonCard.astro';
+import people from '../data/members.json';
+import site from '../data/site.json';
+---
+
+<Base title="Members" description="The executive board and members of Traders at Carolina, and where our alumni go.">
+  <Gallery layout="strip" offset={3} class="page-header page-header--bottom">
+    <div class="container">
+      <h1 class="h-page">Our people</h1>
+    </div>
+  </Gallery>
+
+  <section class="section">
+    <div class="container firms">
+      <h2 class="h-section h-center">Where our members go</h2>
+      <p class="firms__intro">Traders at Carolina members and alumni have gone on to trading, research, and engineering roles at some of the best firms in the industry. Here are a few of them.</p>
+      <img
+        class="firms__logos"
+        src="/images/placements.png"
+        alt={site.firmLogosAlt}
+        width="1580"
+        height="814"
+        loading="lazy"
+        decoding="async"
+      />
+    </div>
+  </section>
+
+  <section class="section section--wash">
+    <div class="container">
+      <h2 class="h-section h-center">Executive Board</h2>
+      <ul class="people people--board">
+        {people.board.map((p) => <PersonCard {...p} />)}
+      </ul>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <h2 class="h-section h-center">Members</h2>
+      <ul class="people people--dense">
+        {people.members.map((p) => <PersonCard {...p} />)}
+      </ul>
+    </div>
+  </section>
+
+  <section class="band on-dark">
+    <div class="container">
+      <p class="band__wordmark">Traders at Carolina</p>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .firms { text-align: center; }
+  .firms__intro { max-width: 60ch; margin: 16px auto 0; }
+  .firms__logos { width: 100%; max-width: 760px; height: auto; margin: 36px auto 0; }
+
+  .people {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 28px 18px;
+    margin: 40px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  @media (max-width: 1000px) { .people { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+  @media (max-width: 640px) { .people { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px 12px; } }
+  @media (max-width: 400px) { .people { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .people :global(.person__name) { font-size: 16.5px; margin-top: 10px; }
+  .people :global(.person__initials) { font-size: clamp(26px, 2.6vw, 36px); }
+
+  /* Executive board: 4 per row (two rows of 4), kept to a moderate width */
+  .people--board { grid-template-columns: repeat(4, minmax(0, 1fr)); max-width: 960px; margin-left: auto; margin-right: auto; gap: 32px 22px; }
+  .people--board :global(.person__name) { font-size: 18px; }
+  @media (max-width: 640px) { .people--board { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px 14px; } }
+
+  /* General members: 6 per row on desktop */
+  .people--dense { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 26px 16px; }
+  .people--dense :global(.person__name) { font-size: 15px; margin-top: 8px; }
+  .people--dense :global(.person__initials) { font-size: clamp(22px, 2vw, 28px); }
+  @media (max-width: 1000px) { .people--dense { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
+  @media (max-width: 640px) { .people--dense { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px 10px; } }
+  @media (max-width: 400px) { .people--dense { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+
+  .band__wordmark {
+    font-family: var(--serif);
+    font-size: clamp(30px, 3.6vw, 44px);
+    line-height: 1.1;
+    color: var(--white);
+  }
+</style>

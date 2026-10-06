@@ -1,0 +1,89 @@
+---
+import '../styles/global.css';
+import Nav from '../components/Nav.astro';
+import Footer from '../components/Footer.astro';
+
+interface Props {
+  title: string;
+  description?: string;
+  chrome?: boolean; // false hides the standard nav + footer (used by /login)
+  animate?: boolean; // false turns off the fade-in-on-scroll animations
+}
+
+const {
+  title,
+  description = "Traders at Carolina is UNC Chapel Hill's student-run quantitative finance club.",
+  chrome = true,
+  animate = true,
+} = Astro.props;
+const fullTitle = title === 'Traders at Carolina' ? title : `${title} · Traders at Carolina`;
+const canonical = Astro.site ? new URL(Astro.url.pathname, Astro.site).href : undefined;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    {canonical && <link rel="canonical" href={canonical} />}
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta name="theme-color" content="#263262" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+
+    <link rel="preload" href="/fonts/clarity-city/ClarityCity-Regular.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400&family=IBM+Plex+Mono:wght@400&display=swap"
+    />
+  </head>
+  <body data-static={animate ? undefined : ''}>
+    <a class="skip-link" href="#main">Skip to content</a>
+    {chrome && <Nav />}
+    <main id="main">
+      <slot />
+    </main>
+    {chrome && <Footer />}
+
+    <script is:inline>
+      // Fade/slide content in as it scrolls into view. Elements that arrive in
+      // the same frame are staggered so lists and grids ripple in.
+      (function () {
+        if (document.body.hasAttribute('data-static')) return;
+        if (!('IntersectionObserver' in window)) return;
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        var SELECTOR = [
+          'main h1', 'main h2', 'main h3', 'main p', 'main dl > div', 'main .btn',
+          '.rail__label', '.head-row .term', '.program__photo', '.firms__logos',
+          '.step', '.person', '.event', '.opp', '.resource', '.board__head', '.divider', '.field', '.check'
+        ].join(',');
+        var STEP = 70, MAX = 8;
+        var els = [];
+        document.querySelectorAll(SELECTOR).forEach(function (el) {
+          if (el.parentElement && el.parentElement.closest('[data-reveal]')) return;
+          if (el.closest('.visually-hidden')) return;
+          var above = el.getBoundingClientRect().top < window.innerHeight;
+          el.setAttribute('data-reveal', above ? 'above' : 'below');
+          els.push(el);
+        });
+        var io = new IntersectionObserver(function (entries) {
+          var i = 0;
+          entries
+            .filter(function (e) { return e.isIntersecting; })
+            .sort(function (a, b) { return a.boundingClientRect.top - b.boundingClientRect.top || a.boundingClientRect.left - b.boundingClientRect.left; })
+            .forEach(function (e) {
+              e.target.style.setProperty('--reveal-delay', Math.min(i++, MAX) * STEP + 'ms');
+              e.target.classList.add('is-revealed');
+              io.unobserve(e.target);
+            });
+        }, { rootMargin: '0px 0px -6% 0px', threshold: 0.08 });
+        els.forEach(function (el) { io.observe(el); });
+      })();
+    </script>
+  </body>
+</html>

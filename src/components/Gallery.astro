@@ -1,0 +1,163 @@
+---
+/**
+ * Photo mosaic under the navy overlay. Each tile slowly crossfades to another
+ * photo from the pool every ~6s (disabled for prefers-reduced-motion).
+ *
+ * layout:
+ *   "mosaic" — home hero, 6×4 grid with 14 mixed-span tiles
+ *   "strip"  — inner-page header, 5 tiles in a row
+ *   "grid3"  — log-in panel, 3×3 grid
+ */
+import site from '../data/site.json';
+
+interface Props {
+  layout?: 'mosaic' | 'strip' | 'grid3';
+  images?: string[];
+  offset?: number;
+  class?: string;
+  label?: string;
+  animate?: boolean; // false: no crossfading photos
+  zoom?: boolean; // true: photos settle from a slight zoom on load (home hero only)
+}
+
+const {
+  layout = 'strip',
+  images = site.gallery,
+  offset = 0,
+  class: className = '',
+  label,
+  animate = true,
+  zoom = false,
+} = Astro.props;
+
+const tileCount = { mosaic: 14, strip: 5, grid3: 9 }[layout];
+const pool = images.length ? images : site.gallery;
+const tiles = Array.from({ length: tileCount }, (_, i) => pool[(offset + i) % pool.length]);
+
+// When there are fewer photos than tiles, the same photo repeats. Each tile
+// focuses on a different part of its photo so the repeats don't look identical.
+const FOCUS = ['50% 50%', '20% 40%', '80% 35%', '35% 70%', '70% 65%', '50% 20%', '15% 75%', '85% 80%'];
+const focus = (i: number) => FOCUS[(i * 3) % FOCUS.length];
+---
+
+<section
+  class:list={['gallery', `gallery--${layout}`, { 'gallery--zoom': zoom && animate }, className]}
+  aria-label={label}
+  data-gallery={animate ? '' : undefined}
+  data-pool={JSON.stringify(pool)}
+>
+  <div class="gallery__grid" aria-hidden="true">
+    {tiles.map((src, i) => (
+      <div class={`gallery__tile t${i + 1}`} style={`--i:${i}`}>
+        <img src={src} alt="" width="1600" height="1100" style={`object-position:${focus(i)}`} loading={i < 6 ? 'eager' : 'lazy'} decoding="async" />
+      </div>
+    ))}
+  </div>
+  <div class="gallery__content">
+    <slot />
+  </div>
+</section>
+
+<style>
+  /* Photos settle from a slight zoom, one tile after another, on page load.
+     Transform-only (no opacity) so the photos still paint immediately. */
+  @keyframes tile-settle {
+    from { transform: scale(1.12); }
+    to   { transform: none; }
+  }
+  .gallery--zoom .gallery__tile img {
+    animation: tile-settle 1.6s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+    animation-delay: calc(var(--i) * 60ms);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .gallery--zoom .gallery__tile img { animation: none; }
+  }
+
+  /* Home hero: 6 columns × 4 rows, 14 tiles */
+  .gallery--mosaic .gallery__grid {
+    grid-template-columns: repeat(6, 1fr);
+    grid-template-rows: repeat(4, 1fr);
+  }
+  .gallery--mosaic .t1  { grid-area: 1 / 1 / 3 / 3; }
+  .gallery--mosaic .t2  { grid-area: 1 / 3 / 2 / 4; }
+  .gallery--mosaic .t3  { grid-area: 1 / 4 / 2 / 5; }
+  .gallery--mosaic .t4  { grid-area: 1 / 5 / 2 / 7; }
+  .gallery--mosaic .t5  { grid-area: 2 / 3 / 3 / 5; }
+  .gallery--mosaic .t6  { grid-area: 2 / 5 / 4 / 6; }
+  .gallery--mosaic .t7  { grid-area: 2 / 6 / 3 / 7; }
+  .gallery--mosaic .t8  { grid-area: 3 / 1 / 4 / 2; }
+  .gallery--mosaic .t9  { grid-area: 3 / 2 / 5 / 3; }
+  .gallery--mosaic .t10 { grid-area: 3 / 3 / 5 / 4; }
+  .gallery--mosaic .t11 { grid-area: 3 / 4 / 4 / 5; }
+  .gallery--mosaic .t12 { grid-area: 3 / 6 / 5 / 7; }
+  .gallery--mosaic .t13 { grid-area: 4 / 1 / 5 / 2; }
+  .gallery--mosaic .t14 { grid-area: 4 / 4 / 5 / 6; }
+
+  /* Inner-page header strip: 5 tiles */
+  .gallery--strip .gallery__grid {
+    grid-template-columns: 1.6fr 1fr 1.3fr 1fr 1.4fr;
+  }
+
+  /* Log-in panel: 3×3 */
+  .gallery--grid3 .gallery__grid {
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+  }
+
+  @media (max-width: 767px) {
+    .gallery--mosaic .gallery__grid {
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(4, 1fr);
+      grid-auto-flow: dense;
+    }
+    .gallery--mosaic .gallery__tile { grid-area: auto; }
+    .gallery--mosaic .t1 { grid-column: span 2; }
+    .gallery--mosaic .t6 { grid-row: span 2; }
+    .gallery--mosaic .t11, .gallery--mosaic .t12,
+    .gallery--mosaic .t13, .gallery--mosaic .t14 { display: none; }
+
+    .gallery--strip .gallery__grid { grid-template-columns: 1.4fr 1fr 1fr; }
+    .gallery--strip .t4, .gallery--strip .t5 { display: none; }
+  }
+</style>
+
+<script>
+  const INTERVAL = 6000;
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+  document.querySelectorAll<HTMLElement>('[data-gallery]').forEach((gallery) => {
+    const pool: string[] = JSON.parse(gallery.dataset.pool || '[]');
+    const tiles = Array.from(gallery.querySelectorAll<HTMLElement>('.gallery__tile'));
+    if (pool.length <= 1 || !tiles.length) return;
+
+    const visibleTiles = () => tiles.filter((t) => t.offsetParent !== null);
+    const shown = () => new Set(tiles.map((t) => t.querySelector('img')?.getAttribute('src')));
+
+    function swap() {
+      if (reduce.matches || document.hidden) return;
+      const candidates = visibleTiles();
+      if (!candidates.length) return;
+      const tile = candidates[Math.floor(Math.random() * candidates.length)];
+      const current = shown();
+      const options = pool.filter((src) => !current.has(src));
+      const choices = options.length ? options : pool;
+      const next = choices[Math.floor(Math.random() * choices.length)];
+      const old = tile.querySelector('img');
+      if (!old || old.getAttribute('src') === next) return;
+
+      const img = document.createElement('img');
+      img.alt = '';
+      img.decoding = 'async';
+      img.className = 'is-next';
+      img.style.objectPosition = old.style.objectPosition;
+      img.src = next;
+      img.addEventListener('load', () => {
+        tile.appendChild(img);
+        requestAnimationFrame(() => requestAnimationFrame(() => img.classList.remove('is-next')));
+        img.addEventListener('transitionend', () => old.remove(), { once: true });
+      }, { once: true });
+    }
+
+    window.setInterval(swap, INTERVAL);
+  });
+</script>

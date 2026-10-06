@@ -1,0 +1,28 @@
+{
+  "googleFormUrl": "https://docs.google.com/forms/d/e/1FAIpQLSevQG3c0W_FuwWlx9fE5GJ7hCPFcEnTYxTCZijznd27RGyTZg/viewform?usp=dialog",
+  "instagram": "https://www.instagram.com/tradersatcarolina",
+  "linkedin": "https://www.linkedin.com/company/tradersatcarolina",
+  "email": "[club-email]@unc.edu",
+  "meeting": {
+    "day": "",
+    "time": "",
+    "room": "Phillips"
+  },
+  "recruitingCycles": "[fall and spring]",
+  "recruitingStatus": {
+    "open": false,
+    "message": "Recruiting closed, we will open spring recruitment in January 2027."
+  },
+  "stats": {
+    "semesters": "7",
+    "members": "30+"
+  },
+  "currentTerm": "FALL 2026",
+  "gallery": [
+    "/images/gallery/interest-meeting-1.jpg",
+    "/images/gallery/interest-meeting-2.jpg",
+    "/images/gallery/interest-meeting-3.jpg",
+    "/images/gallery/interest-meeting-4.jpg"
+  ],
+  "firmLogosAlt": "Firms where members and alumni have gone: Citadel Securities, Susquehanna, Morgan Stanley, PEAK6, J.P. Morgan, Amazon, Goldman Sachs, BCG, a16z and Microsoft, plus a collaboration with Google DeepMind"
+}

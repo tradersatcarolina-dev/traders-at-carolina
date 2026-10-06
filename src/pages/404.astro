@@ -1,0 +1,19 @@
+---
+import Base from '../layouts/Base.astro';
+---
+
+<Base title="Page not found">
+  <section class="section">
+    <div class="container nf">
+      <p class="mono">404</p>
+      <h1 class="h-page">Page not found.</h1>
+      <p>The page you were looking for has moved or doesn't exist.</p>
+      <a class="btn" href="/">Back to home</a>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .nf { display: grid; gap: 24px; justify-items: start; min-height: 50vh; align-content: center; }
+  .nf .mono { color: var(--blue); }
+</style>

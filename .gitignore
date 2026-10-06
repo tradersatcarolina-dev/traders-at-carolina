@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.astro/
+.DS_Store
+
+# Full-size original photos (backups only; the site uses the resized copies in public/)
+assets-originals/

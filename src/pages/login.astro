@@ -1,0 +1,181 @@
+---
+import Base from '../layouts/Base.astro';
+import Gallery from '../components/Gallery.astro';
+import site from '../data/site.json';
+---
+
+<Base title="Log In" description="Log in to the Traders at Carolina members' area." chrome={false} animate={false}>
+  <div class="split">
+    <Gallery layout="grid3" offset={5} class="split__photo" label="Members' area" animate={false}>
+      <div class="panel">
+        <a class="panel__wordmark" href="/">Traders at Carolina</a>
+        <div class="panel__copy">
+          <h2>Members' area</h2>
+          <p>Session slides, the problem bank, mock interview sign-ups and everything else for current members.</p>
+        </div>
+      </div>
+    </Gallery>
+
+    <div class="split__form">
+      <div class="form-col">
+        <h1 class="h-login">Log In</h1>
+        <p class="welcome">Welcome back.</p>
+
+        <!--
+          ===================== AUTH INTEGRATION POINT =====================
+          Login is currently design-only (option A). The form below does not
+          send anything anywhere. To connect real auth, replace the handler in
+          the <script> at the bottom of this file — see "Turning on member
+          log-in" in README.md for Supabase, Firebase and redirect options.
+          ==================================================================
+        -->
+        <form class="form" data-login-form novalidate>
+          <div class="field">
+            <label for="email">Email</label>
+            <input id="email" name="email" type="email" autocomplete="username" placeholder="you@example.com" required />
+          </div>
+          <div class="field">
+            <div class="field__row">
+              <label for="password">Password</label>
+              <a class="small-link" href={`mailto:${site.email}?subject=Password%20reset`}>Forgot password?</a>
+            </div>
+            <input id="password" name="password" type="password" autocomplete="current-password" required />
+          </div>
+          <label class="check">
+            <input type="checkbox" name="remember" />
+            <span>Keep me signed in</span>
+          </label>
+
+          <button class="btn btn--block" type="submit">Log In</button>
+          <p class="form__status" role="status" aria-live="polite" data-login-status></p>
+
+          <div class="divider"><span>or</span></div>
+
+          <button class="btn btn--outline btn--block" type="button" data-onyen>Continue with UNC Onyen</button>
+        </form>
+
+        <p class="not-member">
+          Not a member yet?{' '}
+          <a href={site.googleFormUrl} target="_blank" rel="noopener noreferrer">
+            Fill out our interest form <span aria-hidden="true">↗</span><span class="visually-hidden"> (opens in a new tab)</span>
+          </a>
+        </p>
+      </div>
+    </div>
+  </div>
+</Base>
+
+<script>
+  // ===================== AUTH INTEGRATION POINT =====================
+  // Design-only for now. Replace `signIn` / `signInWithOnyen` with real calls
+  // (e.g. supabase.auth.signInWithPassword) when log-in goes live.
+  const form = document.querySelector<HTMLFormElement>('[data-login-form]');
+  const status = document.querySelector<HTMLElement>('[data-login-status]');
+  const onyen = document.querySelector<HTMLButtonElement>('[data-onyen]');
+
+  const NOT_LIVE = "Member log-in isn't live yet. Ask a board member for the members' folder link.";
+
+  async function signIn(email: string, _password: string, _remember: boolean) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error('Please enter a valid email address.');
+    throw new Error(NOT_LIVE);
+  }
+  async function signInWithOnyen() {
+    throw new Error(NOT_LIVE);
+  }
+
+  const show = (msg: string) => { if (status) status.textContent = msg; };
+
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const data = new FormData(form);
+    try {
+      await signIn(String(data.get('email') || '').trim(), String(data.get('password') || ''), data.get('remember') === 'on');
+    } catch (err) {
+      show((err as Error).message);
+    }
+  });
+  onyen?.addEventListener('click', async () => {
+    try { await signInWithOnyen(); } catch (err) { show((err as Error).message); }
+  });
+</script>
+
+<style>
+  .split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+  :global(.split__photo) { display: flex; }
+  :global(.split__photo .gallery__content) { display: flex; width: 100%; }
+  .panel {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    width: 100%;
+    padding: 32px 40px 44px;
+  }
+  .panel__wordmark {
+    font-family: var(--serif);
+    font-size: 23px;
+    line-height: 1;
+    color: var(--white);
+    text-decoration: none;
+  }
+  .panel__copy { max-width: 30rem; margin-top: 48px; }
+  .panel__copy h2 { font-size: clamp(32px, 3.4vw, 48px); }
+  .panel__copy p { margin-top: 12px; font-size: 16.5px; line-height: 1.6; color: var(--white); }
+
+  .split__form {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 64px var(--gutter);
+    background: var(--white);
+  }
+  .form-col { width: 100%; max-width: 380px; }
+  .h-login { font-size: clamp(38px, 3.8vw, 50px); }
+  .welcome { margin-top: 6px; color: var(--body); }
+
+  .form { display: grid; gap: 16px; margin-top: 28px; }
+  .field { display: grid; gap: 6px; }
+  .field__row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+  label { font-size: 14px; font-weight: 600; color: var(--ink); }
+  input[type='email'], input[type='password'] {
+    width: 100%;
+    height: 46px;
+    padding: 0 14px;
+    border: 1px solid #8A8F9C;
+    border-radius: 0;
+    background: var(--white);
+    font: inherit;
+    font-size: 15px;
+    color: var(--ink);
+  }
+  input::placeholder { color: #6B6F7A; }
+  input[type='email']:focus, input[type='password']:focus { border-color: var(--blue); outline: 2px solid var(--blue); outline-offset: 0; }
+  .small-link { font-size: 14px; font-weight: 500; }
+  .check { display: flex; align-items: center; gap: 10px; font-weight: 400; font-size: 15px; color: var(--body); cursor: pointer; }
+  .check input { width: 18px; height: 18px; margin: 0; accent-color: var(--navy); }
+  .form__status { min-height: 0; font-size: 14px; color: var(--soon-fg); }
+  .form__status:empty { display: none; }
+
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    color: var(--muted);
+    font-size: 14px;
+  }
+  .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--rule); }
+
+  .not-member { margin-top: 26px; font-size: 14px; color: var(--body); }
+  .not-member a { font-weight: 500; }
+
+  @media (max-width: 860px) {
+    .split { grid-template-columns: minmax(0, 1fr); }
+    :global(.split__photo) { min-height: 300px; }
+    .panel { padding: 24px var(--gutter) 32px; }
+    .split__form { align-items: flex-start; padding-top: 36px; padding-bottom: 48px; }
+  }
+</style>

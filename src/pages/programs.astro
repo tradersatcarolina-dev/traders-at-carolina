@@ -34,7 +34,6 @@ const tagLabel = (tag: string) => (tag === 'members' ? 'Members only' : 'Open to
   <Gallery layout="strip" offset={7} class="page-header page-header--programs">
     <div class="container">
       <h1 class="h-page">Programs</h1>
-      <p class="header-sub">What we're hosting, plus every deadline and opportunity worth knowing about.</p>
     </div>
   </Gallery>
 
@@ -186,13 +185,6 @@ const tagLabel = (tag: string) => (tag === 'members' ? 'Members only' : 'Open to
 
 <style>
   :global(.page-header--programs) { min-height: 280px; }
-  .header-sub {
-    margin-top: 12px;
-    max-width: 40ch;
-    font-size: 17px;
-    line-height: 1.5;
-    color: var(--white);
-  }
   .intro { margin-top: 14px; max-width: 64ch; }
   [hidden] { display: none !important; }
 

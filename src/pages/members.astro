@@ -6,7 +6,9 @@ import people from '../data/members.json';
 import site from '../data/site.json';
 ---
 
-<Base title="Members" description="The executive board and members of Traders at Carolina, and where our alumni go.">
+<Base title="Members" description="The executive board and members of Traders at Carolina, and where our alumni go."
+  reveal={['.h-page', '.h-section', '.firms__intro', '.firms__logos', '.person', '.band__wordmark']}
+>
   <Gallery layout="strip" offset={3} class="page-header page-header--bottom">
     <div class="container">
       <h1 class="h-page">Our people</h1>

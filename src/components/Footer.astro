@@ -11,6 +11,15 @@ import site from '../data/site.json';
       <li><a href={site.linkedin} target="_blank" rel="noopener noreferrer">LinkedIn</a></li>
     </ul>
   </div>
+  <div class="sponsors">
+    <div class="container sponsors__inner">
+      <p class="mono">Sponsored by</p>
+      <ul>
+        <li><img src="/images/sponsors/jane-street.svg" alt="Jane Street" width="104" height="41" /></li>
+        <li><img src="/images/sponsors/jp-morgan.svg" alt="J.P. Morgan" width="98" height="21" class="jpm" /></li>
+      </ul>
+    </div>
+  </div>
 </footer>
 
 <style>
@@ -32,4 +41,19 @@ import site from '../data/site.json';
   ul { display: flex; gap: 28px; margin: 0; padding: 0; list-style: none; }
   a { color: var(--ink); text-decoration: none; font-weight: 500; }
   a:hover { color: var(--blue); text-decoration: underline; text-underline-offset: 4px; }
+
+  .sponsors { border-top: 1px solid var(--rule); background: var(--wash); }
+  .sponsors__inner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 16px 40px;
+    padding-top: 20px;
+    padding-bottom: 20px;
+  }
+  .sponsors p { margin: 0; }
+  .sponsors ul { flex-wrap: wrap; justify-content: center; align-items: center; gap: 16px 40px; }
+  .sponsors img { display: block; height: 32px; width: auto; }
+  .sponsors img.jpm { height: 22px; }
 </style>

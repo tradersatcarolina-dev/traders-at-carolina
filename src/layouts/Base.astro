@@ -7,14 +7,12 @@ interface Props {
   title: string;
   description?: string;
   chrome?: boolean; // false hides the standard nav + footer (used by /login)
-  animate?: boolean; // false turns off the fade-in-on-scroll animations
 }
 
 const {
   title,
   description = "Traders at Carolina is UNC Chapel Hill's student-run quantitative finance club.",
   chrome = true,
-  animate = true,
 } = Astro.props;
 const fullTitle = title === 'Traders at Carolina' ? title : `${title} · Traders at Carolina`;
 const canonical = Astro.site ? new URL(Astro.url.pathname, Astro.site).href : undefined;
@@ -42,7 +40,7 @@ const canonical = Astro.site ? new URL(Astro.url.pathname, Astro.site).href : un
       href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400&family=IBM+Plex+Mono:wght@400&display=swap"
     />
   </head>
-  <body data-static={animate ? undefined : ''}>
+  <body>
     <a class="skip-link" href="#main">Skip to content</a>
     {chrome && <Nav />}
     <main id="main">
@@ -51,17 +49,13 @@ const canonical = Astro.site ? new URL(Astro.url.pathname, Astro.site).href : un
     {chrome && <Footer />}
 
     <script is:inline>
-      // Fade/slide content in as it scrolls into view. Elements that arrive in
-      // the same frame are staggered so lists and grids ripple in.
+      // Fade/slide in the home-page hero (title, tagline, buttons) on load.
+      // Elements that arrive in the same frame are staggered so they ripple in.
+      // Add selectors to SELECTOR to animate anything else.
       (function () {
-        if (document.body.hasAttribute('data-static')) return;
         if (!('IntersectionObserver' in window)) return;
         if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-        var SELECTOR = [
-          'main h1', 'main h2', 'main h3', 'main p', 'main dl > div', 'main .btn',
-          '.rail__label', '.head-row .term', '.program__photo', '.firms__logos',
-          '.step', '.person', '.event', '.opp', '.resource', '.board__head', '.divider', '.field', '.check'
-        ].join(',');
+        var SELECTOR = ['.hero__title', '.hero__sub', '.hero__actions .btn'].join(',');
         var STEP = 70, MAX = 8;
         var els = [];
         document.querySelectorAll(SELECTOR).forEach(function (el) {

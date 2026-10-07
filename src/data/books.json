@@ -1,0 +1,31 @@
+{
+  "recommender": {
+    "name": "Braden Anghie",
+    "firm": "Geneva Trading",
+    "firmLogo": "/images/firms/geneva-trading.svg",
+    "firmUrl": "https://www.genevatrading.com/"
+  },
+  "books": [
+    {
+      "title": "The Inner Game of Tennis",
+      "author": "W. Timothy Gallwey",
+      "cover": "/images/books/inner-game-of-tennis.png",
+      "spine": "#1F7A3A",
+      "spineText": "#FFFFFF"
+    },
+    {
+      "title": "Trading in the Zone",
+      "author": "Mark Douglas",
+      "cover": "/images/books/trading-in-the-zone.png",
+      "spine": "#1B2A4C",
+      "spineText": "#F2D9A0"
+    },
+    {
+      "title": "Best Loser Wins",
+      "author": "Tom Hougaard",
+      "cover": "/images/books/best-loser-wins.png",
+      "spine": "#121212",
+      "spineText": "#FFFFFF"
+    }
+  ]
+}

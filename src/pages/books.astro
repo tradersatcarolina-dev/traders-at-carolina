@@ -1,0 +1,263 @@
+---
+import Base from '../layouts/Base.astro';
+import data from '../data/books.json';
+
+const { recommender, books } = data;
+---
+
+<Base
+  title="Books"
+  description="Books that traders and researchers who visit Traders at Carolina recommend to students."
+  reveal={['.shelf__title', '.shelf__item']}
+>
+  <section class="section section--books" aria-labelledby="books-title">
+    <div class="container">
+      <h1 class="h-section h-center shelf__title" id="books-title">Reading List</h1>
+
+      <!-- The shelf -->
+      <ul class="shelf">
+        {books.map((b, i) => (
+          <li
+            class="shelf__item"
+            style={`--d: ${(-i * 1.7).toFixed(1)}s; --spine: ${b.spine}; --spine-text: ${b.spineText};`}
+          >
+            <div class="stage" aria-hidden="true">
+              <div class="float">
+                <div class="book">
+                  <div class="book__face book__front">
+                    <img src={b.cover} alt="" width="360" height="540" loading="lazy" decoding="async" />
+                  </div>
+                  <div class="book__face book__back"></div>
+                  <div class="book__face book__spine"><span>{b.title}</span></div>
+                  <div class="book__face book__pages book__pages--side"></div>
+                  <div class="book__face book__pages book__pages--top"></div>
+                  <div class="book__face book__pages book__pages--bottom"></div>
+                </div>
+              </div>
+              <div class="shadow"></div>
+            </div>
+
+            <div class="caption">
+              <h3 class="caption__title">{b.title}</h3>
+              <p class="caption__author">{b.author}</p>
+              <p class="caption__rec">
+                Recommended by <strong>{recommender.name}</strong>
+                <img class="caption__logo" src={recommender.firmLogo} alt={recommender.firm} width="300" height="46" />
+              </p>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </section>
+
+  <section class="band on-dark">
+    <div class="container">
+      <p class="band__wordmark">Traders at Carolina</p>
+    </div>
+  </section>
+</Base>
+
+<style>
+  /* ---------- Shelf layout ---------- */
+  .section--books { padding-top: 44px; }
+  .shelf__title { margin: 0 0 52px; }
+  .shelf {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 56px 32px;
+    margin: 52px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .shelf__item { display: flex; flex-direction: column; align-items: center; text-align: center; }
+
+  /* ---------- 3D book ----------
+     --w / --h set the cover size, --t the thickness. The stage holds the
+     perspective; .float bobs up and down; .book turns slowly on its Y axis.
+     The two motions live on different elements so their transforms never fight. */
+  .stage {
+    --w: 196px;
+    --h: 294px;
+    --t: 30px;
+    --float-time: 5.6s;
+    --turn-time: 12s;
+    position: relative;
+    width: var(--w);
+    height: calc(var(--h) + 70px);
+    perspective: 1400px;
+    perspective-origin: 50% 35%;
+  }
+  .float {
+    position: absolute;
+    left: 0;
+    top: 10px;
+    width: var(--w);
+    height: var(--h);
+    transform-style: preserve-3d;
+    animation: book-float var(--float-time) ease-in-out infinite;
+    animation-delay: var(--d, 0s);
+  }
+  .book {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transform-style: preserve-3d;
+    transform: rotateX(4deg) rotateY(-16deg);
+    animation: book-turn var(--turn-time) ease-in-out infinite;
+    animation-delay: var(--d, 0s);
+  }
+  .book__face {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    backface-visibility: hidden;
+  }
+  .book__front {
+    transform: translateZ(calc(var(--t) / 2));
+    background: var(--spine);
+    overflow: hidden;
+  }
+  .book__front img { width: 100%; height: 100%; object-fit: cover; }
+  /* A soft sheen so the cover reads as a glossy surface, not a flat image. */
+  .book__front::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(105deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0) 38%, rgba(0, 0, 0, 0.08) 100%);
+    pointer-events: none;
+  }
+  .book__back {
+    transform: rotateY(180deg) translateZ(calc(var(--t) / 2));
+    background: var(--spine);
+    filter: brightness(0.85);
+  }
+  .book__spine {
+    left: calc(var(--t) / -2);
+    width: var(--t);
+    transform: rotateY(-90deg);
+    background: linear-gradient(90deg, rgba(0, 0, 0, 0.28), rgba(0, 0, 0, 0) 30%, rgba(255, 255, 255, 0.06) 55%, rgba(0, 0, 0, 0.22) 100%), var(--spine);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .book__spine span {
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    font-family: var(--serif);
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    color: var(--spine-text);
+    white-space: nowrap;
+    opacity: 0.95;
+  }
+  .book__pages {
+    background:
+      repeating-linear-gradient(90deg, #F4F1EA 0 1px, #E4E0D6 1px 2px),
+      #F4F1EA;
+  }
+  .book__pages--side {
+    left: auto;
+    right: calc(var(--t) / -2);
+    width: var(--t);
+    top: 2px;
+    height: calc(100% - 4px);
+    transform: rotateY(90deg);
+    box-shadow: inset 2px 0 4px rgba(0, 0, 0, 0.12);
+  }
+  .book__pages--top,
+  .book__pages--bottom {
+    left: 2px;
+    width: calc(100% - 4px);
+    height: var(--t);
+    background:
+      repeating-linear-gradient(0deg, #F4F1EA 0 1px, #E4E0D6 1px 2px),
+      #F4F1EA;
+  }
+  .book__pages--top {
+    top: calc(var(--t) / -2);
+    transform: rotateX(90deg);
+  }
+  .book__pages--bottom {
+    top: auto;
+    bottom: calc(var(--t) / -2);
+    transform: rotateX(-90deg);
+    filter: brightness(0.9);
+  }
+
+  /* ---------- Floating shadow ---------- */
+  .shadow {
+    position: absolute;
+    left: 50%;
+    bottom: 6px;
+    width: calc(var(--w) * 1.04);
+    height: 28px;
+    transform: translateX(-50%);
+    transform-origin: 50% 50%;
+    border-radius: 50%;
+    background: radial-gradient(ellipse at center, rgba(22, 22, 22, 0.55) 0%, rgba(22, 22, 22, 0.28) 40%, rgba(22, 22, 22, 0) 78%);
+    filter: blur(6px);
+    animation: shadow-breathe var(--float-time) ease-in-out infinite;
+    animation-delay: var(--d, 0s);
+  }
+
+  @keyframes book-float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-14px); }
+  }
+  @keyframes book-turn {
+    0%, 100% { transform: rotateX(4deg) rotateY(-24deg); }
+    50% { transform: rotateX(3deg) rotateY(18deg); }
+  }
+  @keyframes shadow-breathe {
+    0%, 100% { transform: translateX(-50%) scale(1); opacity: 1; }
+    50% { transform: translateX(-50%) scale(0.84); opacity: 0.62; }
+  }
+
+  /* Hover: hold the book still and turn it to face the reader. */
+  .shelf__item:hover .book,
+  .shelf__item:focus-within .book {
+    animation-play-state: paused;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .float, .book, .shadow { animation: none; }
+    .book { transform: rotateX(4deg) rotateY(-18deg); }
+  }
+
+  /* ---------- Caption ---------- */
+  .caption { margin-top: 10px; max-width: 320px; }
+  .caption__title { font-size: 24px; line-height: 1.2; }
+  .caption__author { margin-top: 6px; font-size: 14px; font-weight: 500; color: var(--blue); }
+  .caption__rec {
+    margin-top: 12px;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--muted);
+  }
+  .caption__rec strong { font-weight: 600; color: var(--ink); }
+  .caption__logo {
+    display: inline-block;
+    width: auto;
+    height: 14px;
+    margin-left: 6px;
+    vertical-align: -2px;
+  }
+
+  @media (max-width: 600px) {
+    .shelf { gap: 48px 24px; }
+    .section--books { padding-top: 32px; }
+    .shelf__title { margin-bottom: 36px; }
+    .shelf { margin-top: 36px; }
+  }
+
+  /* ---------- Closing band (matches Members page) ---------- */
+  .band__wordmark {
+    font-family: var(--serif);
+    font-size: clamp(30px, 3.6vw, 44px);
+    line-height: 1.1;
+    color: var(--white);
+  }
+</style>

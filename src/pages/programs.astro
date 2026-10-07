@@ -10,7 +10,7 @@ import { todayISO, isPast, isSoon, shortDate } from '../lib/dates';
 
 const today = todayISO();
 
-// Events without a date ("details to come") always show, after dated ones.
+// Events without a date (recurring, or "details to come") always show, after dated ones.
 const upcoming = events
   .filter((e) => !e.date || !isPast(e.date, today))
   .sort((a, b) => (a.date || '9999').localeCompare(b.date || '9999'));
@@ -61,7 +61,7 @@ const tagLabel = (tag: string) => (tag === 'members' ? 'Members only' : 'Open to
                   <div class="event__meta">
                     {e.date
                       ? <time class="mono event__date" datetime={e.date}>{shortDate(e.date)}</time>
-                      : <span class="mono event__date">Date TBA</span>}
+                      : <span class="mono event__date">{e.schedule || 'Date TBA'}</span>}
                     {e.tag && <span class:list={['tag', { 'tag--members': e.tag === 'members' }]}>{tagLabel(e.tag)}</span>}
                   </div>
                   <h3 class="event__title">{e.title}</h3>

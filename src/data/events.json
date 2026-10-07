@@ -1,5 +1,11 @@
 [
   {
+    "title": "Weekly Poker Night",
+    "schedule": "Every Friday",
+    "description": "We host poker nights every Friday. Come practise reading odds and making decisions under uncertainty.",
+    "photo": "/images/gallery/interest-meeting-4.jpg"
+  },
+  {
     "title": "Jane Street Estimathon",
     "description": "More details to be revealed at a later date.",
     "photo": "/images/gallery/interest-meeting-2.jpg"

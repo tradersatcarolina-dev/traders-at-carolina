@@ -1,6 +1,6 @@
 ---
 import PortalLayout from '../../layouts/PortalLayout.astro';
-import { longDate, sessionLabel, type Session } from '../../lib/portal';
+import { href, external, longDate, sessionLabel, type Session } from '../../lib/portal';
 
 export const prerender = false;
 
@@ -28,10 +28,18 @@ const sessions = (data ?? []) as Session[];
         </div>
         <div class="session__links">
           {s.slides_url && (
-            <a class="pill" href={s.slides_url} target="_blank" rel="noopener noreferrer">Slides <span aria-hidden="true">↗</span><span class="visually-hidden"> (opens in a new tab)</span></a>
+            external(s.slides_url) ? (
+              <a class="pill" href={s.slides_url} target="_blank" rel="noopener noreferrer">Slides <span aria-hidden="true">↗</span><span class="visually-hidden"> (opens in a new tab)</span></a>
+            ) : (
+              <a class="pill" href={href(s.slides_url)}>Slides</a>
+            )
           )}
           {s.recording_url && (
-            <a class="pill" href={s.recording_url} target="_blank" rel="noopener noreferrer">Recording <span aria-hidden="true">↗</span><span class="visually-hidden"> (opens in a new tab)</span></a>
+            external(s.recording_url) ? (
+              <a class="pill" href={s.recording_url} target="_blank" rel="noopener noreferrer">Recording <span aria-hidden="true">↗</span><span class="visually-hidden"> (opens in a new tab)</span></a>
+            ) : (
+              <a class="pill" href={href(s.recording_url)}>Recording</a>
+            )
           )}
           {!s.slides_url && !s.recording_url && <span class="session__none">Materials coming soon</span>}
         </div>

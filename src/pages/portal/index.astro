@@ -2,7 +2,7 @@
 import PortalLayout from '../../layouts/PortalLayout.astro';
 import QuestionRow from '../../components/members/QuestionRow.astro';
 import {
-  weekdayShort, dayOfMonth, timeOfDay, longDate, sessionLabel, sessionMaterials,
+  href, external, weekdayShort, dayOfMonth, timeOfDay, longDate, sessionLabel, sessionMaterials,
   type Question, type Resource, type Session,
 } from '../../lib/portal';
 
@@ -21,7 +21,9 @@ const [nextRes, toolsRes, questionsRes, slidesRes] = await Promise.all([
 const nextSession = nextRes.data as Session | null;
 const tools = (toolsRes.data ?? []) as Resource[];
 const questions = (questionsRes.data ?? []) as Question[];
-const latest = (slidesRes.data ?? []) as Session[];
+// Each recent session links to its slides (or recording); our own PDFs go to
+// Resources, where they're embedded.
+const latest = ((slidesRes.data ?? []) as Session[]).map((s) => ({ ...s, link: s.slides_url ?? s.recording_url }));
 
 const firstName = profile.full_name?.trim().split(/\s+/)[0] || user?.email?.split('@')[0] || 'there';
 ---
@@ -53,7 +55,7 @@ const firstName = profile.full_name?.trim().split(/\s+/)[0] || user?.email?.spli
     {tools.length > 0 ? (
       <div class="tools">
         {tools.map((t) => (
-          <a class="tool box" href={t.url} target="_blank" rel="noopener noreferrer">
+          <a class="tool box" href={href(t.url)} target="_blank" rel="noopener noreferrer">
             <span class="tool__title">{t.title} <span aria-hidden="true">↗</span><span class="visually-hidden"> (opens in a new tab)</span></span>
             {t.description && <span class="tool__desc">{t.description}</span>}
           </a>
@@ -84,7 +86,7 @@ const firstName = profile.full_name?.trim().split(/\s+/)[0] || user?.email?.spli
       <div class="box">
         {latest.length > 0
           ? latest.map((s) => (
-              <a class="row-link" href={s.slides_url ?? s.recording_url ?? '/portal/slides'} {...(s.slides_url || s.recording_url ? { target: '_blank', rel: 'noopener noreferrer' } : {})}>
+              <a class="row-link" href={s.link ? href(s.link) : '/portal/slides'} {...(s.link && external(s.link) ? { target: '_blank', rel: 'noopener noreferrer' } : {})}>
                 <span class="slide__title">{sessionLabel(s)}</span>
                 <span class="slide__meta">{sessionMaterials(s)}</span>
               </a>

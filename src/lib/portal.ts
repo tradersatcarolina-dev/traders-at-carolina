@@ -117,8 +117,27 @@ export function parseQuestionForm(form: FormData) {
   return { values, row, error };
 }
 
+/** The path of a members-only file (src/files/), whatever domain the stored
+ * link uses. The tables only accept absolute URLs. */
+export function filePath(url: string): string | null {
+  try {
+    const { pathname } = new URL(url);
+    return pathname.startsWith('/portal/files/') ? pathname : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Link target for a stored URL. Members-only files are embedded on the
+ * Resources page, so links to them go there instead of opening the PDF. */
+export const href = (url: string) => (filePath(url) ? '/portal/resources' : url);
+
+/** Whether a link opens in a new tab (everything but our own files). */
+export const external = (url: string) => !filePath(url);
+
 /** Hostname for display, e.g. "tradermath.org". */
 export function hostname(url: string): string {
+  if (filePath(url)) return 'PDF';
   try {
     return new URL(url).hostname.replace(/^www\./, '');
   } catch {

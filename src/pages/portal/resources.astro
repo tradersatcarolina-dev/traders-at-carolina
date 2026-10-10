@@ -1,6 +1,6 @@
 ---
 import PortalLayout from '../../layouts/PortalLayout.astro';
-import { hostname, type Resource } from '../../lib/portal';
+import { filePath, hostname, type Resource } from '../../lib/portal';
 
 export const prerender = false;
 
@@ -10,7 +10,10 @@ const { data } = await Astro.locals.supabase
   .order('category')
   .order('sort_order')
   .order('title');
-const resources = (data ?? []) as Resource[];
+const all = (data ?? []) as Resource[];
+// Our own PDFs are embedded at the top; everything else is a link card.
+const files = all.flatMap((r) => { const path = filePath(r.url); return path ? [{ ...r, path }] : []; });
+const resources = all.filter((r) => !filePath(r.url));
 
 // Group by category, keeping "Practice tools" first.
 const groups = new Map<string, Resource[]>();
@@ -26,7 +29,20 @@ const categories = [...groups.keys()].sort((a, b) =>
     <p class="page-lede">Practice tools, reading and shared files the board recommends.</p>
   </div>
 
-  {categories.length === 0 && <p class="box empty">No resources yet. A club president can add them in Supabase.</p>}
+  {files.map((f) => (
+    <section class="section" aria-labelledby={`file-${f.id}`}>
+      <div class="file__head">
+        <div>
+          <h2 class="h2" id={`file-${f.id}`}>{f.title}</h2>
+          {f.description && <p class="file__desc">{f.description}</p>}
+        </div>
+        <a class="btn btn--small" href={`${f.path}?download`} download>Download PDF</a>
+      </div>
+      <iframe class="file__view box" src={`${f.path}#view=FitH`} title={f.title} loading="lazy"></iframe>
+    </section>
+  ))}
+
+  {files.length === 0 && categories.length === 0 && <p class="box empty">No resources yet. A club president can add them in Supabase.</p>}
 
   {categories.map((cat) => (
     <section class="section" aria-labelledby={`cat-${cat}`}>
@@ -51,4 +67,7 @@ const categories = [...groups.keys()].sort((a, b) =>
   .card__title { font-weight: 600; font-size: 15px; }
   .card__desc { font-size: 13px; color: var(--secondary); }
   .card__url { margin-top: auto; padding-top: 6px; font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
+  .file__head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 12px 24px; }
+  .file__desc { margin-top: 2px; font-size: 14px; color: var(--secondary); }
+  .file__view { display: block; width: 100%; height: min(80vh, 760px); padding: 0; }
 </style>

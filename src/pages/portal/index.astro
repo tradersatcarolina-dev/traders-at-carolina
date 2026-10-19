@@ -15,7 +15,14 @@ const now = new Date().toISOString();
 let zetaError = '';
 if (Astro.request.method === 'POST') {
   const form = await Astro.request.formData();
-  if (String(form.get('intent') ?? '') === 'zetamac') {
+  const intent = String(form.get('intent') ?? '');
+  const scoreId = String(form.get('id') ?? '');
+  if (intent === 'zetamac_delete' && /^[0-9a-f-]{36}$/i.test(scoreId)) {
+    // RLS only lets you delete your own scores (presidents: any).
+    await supabase.from('zetamac_scores').delete().eq('id', scoreId);
+    return Astro.redirect('/portal#zetamac');
+  }
+  if (intent === 'zetamac') {
     const raw = String(form.get('score') ?? '').trim();
     const score = Number(raw);
     if (!/^\d{1,3}$/.test(raw) || score < 1 || score > 500) zetaError = 'Enter a whole-number score between 1 and 500.';
@@ -33,7 +40,7 @@ const [nextRes, toolsRes, questionsRes, slidesRes, zetaRes] = await Promise.all(
   supabase.from('resources').select('*').eq('category', 'Practice tools').order('sort_order').order('title').limit(8),
   supabase.from('question_feed').select('*').order('created_at', { ascending: false }).limit(4),
   supabase.from('sessions').select('*').lt('date', now).order('date', { ascending: false }).limit(3),
-  supabase.from('zetamac_scores').select('score, created_at, user_id, profiles(full_name)').order('score', { ascending: false }).order('created_at').limit(100),
+  supabase.from('zetamac_scores').select('id, score, created_at, user_id, profiles(full_name)').order('score', { ascending: false }).order('created_at').limit(100),
 ]);
 
 const nextSession = nextRes.data as Session | null;
@@ -43,15 +50,12 @@ const questions = (questionsRes.data ?? []) as Question[];
 // Resources, where they're embedded.
 const latest = ((slidesRes.data ?? []) as Session[]).map((s) => ({ ...s, link: s.slides_url ?? s.recording_url }));
 
-// Each person's best score, highest first.
-type ZetaRow = { score: number; user_id: string; profiles: { full_name: string | null } | { full_name: string | null }[] | null };
-const bestByPerson = new Map<string, { name: string; score: number; mine: boolean }>();
-for (const r of (zetaRes.data ?? []) as unknown as ZetaRow[]) {
-  if (bestByPerson.has(r.user_id)) continue;
+// Top five scores, highest first, with who posted them.
+type ZetaRow = { id: string; score: number; created_at: string; user_id: string; profiles: { full_name: string | null } | { full_name: string | null }[] | null };
+const zetaBoard = ((zetaRes.data ?? []) as unknown as ZetaRow[]).slice(0, 5).map((r) => {
   const p = Array.isArray(r.profiles) ? r.profiles[0] : r.profiles;
-  bestByPerson.set(r.user_id, { name: p?.full_name?.trim() || 'Member', score: r.score, mine: r.user_id === user?.id });
-}
-const zetaBoard = [...bestByPerson.values()].slice(0, 5);
+  return { id: r.id, score: r.score, name: p?.full_name?.trim() || 'Member', mine: r.user_id === user?.id, date: r.created_at };
+});
 
 const firstName = profile.full_name?.trim().split(/\s+/)[0] || user?.email?.split('@')[0] || 'there';
 ---
@@ -125,14 +129,23 @@ const firstName = profile.full_name?.trim().split(/\s+/)[0] || user?.email?.spli
 
       <section class="section zeta" id="zetamac" aria-labelledby="zeta-h">
         <div class="section__head">
-          <h2 class="h2" id="zeta-h">Zetamac scores</h2>
+          <h2 class="h2 zeta__h" id="zeta-h">Zetamac scores</h2>
         </div>
         <div class="box">
           {zetaBoard.length > 0
             ? zetaBoard.map((r) => (
                 <div class="row-link zeta__row">
-                  <span class="slide__title">{r.name}</span>
-                  <span class="slide__title zeta__score">{r.score}</span>
+                  <div>
+                    <span class="slide__title">{r.name}</span>
+                    <span class="slide__meta">Score {r.score}</span>
+                  </div>
+                  {r.mine && (
+                    <form method="post" action="/portal#zetamac">
+                      <input type="hidden" name="intent" value="zetamac_delete" />
+                      <input type="hidden" name="id" value={r.id} />
+                      <button class="zeta__del" type="submit" aria-label={`Delete your score of ${r.score}`}>Delete</button>
+                    </form>
+                  )}
                 </div>
               ))
             : <p class="empty">No scores yet. Post the first one.</p>}
@@ -172,11 +185,14 @@ const firstName = profile.full_name?.trim().split(/\s+/)[0] || user?.email?.spli
   .slide__title { display: block; font-weight: 500; font-size: 14.5px; }
   .slide__meta { font-size: 13px; color: var(--muted); }
 
-  .zeta { margin-top: 28px; }
-  .zeta__row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
-  .zeta__score { font-variant-numeric: tabular-nums; }
+  .zeta { margin-top: 36px; gap: 18px; }
+  .zeta__h { font-size: 20px; }
+  .zeta__row { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+  .zeta__row .slide__title, .zeta__row .slide__meta { display: block; }
+  .zeta__del { background: none; border: 0; padding: 0; font: inherit; font-size: 13px; color: var(--muted); text-decoration: underline; cursor: pointer; }
+  .zeta__del:hover { color: var(--ink); }
   .zeta__form { display: flex; gap: 8px; padding: 14px 18px; }
-  .zeta__form .input { flex: 1; min-width: 0; height: 38px; font-size: 14px; padding: 0 12px; }
+  .zeta__form .input { flex: 1; min-width: 0; height: 36px; font-size: 13px; padding: 0 12px; }
 
   @media (max-width: 640px) {
     .next { width: 100%; }

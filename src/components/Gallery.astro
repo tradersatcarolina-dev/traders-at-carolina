@@ -7,11 +7,12 @@
  *   "mosaic" — home hero, 6×4 grid with 14 mixed-span tiles
  *   "strip"  — inner-page header, 5 tiles in a row
  *   "grid3"  — log-in panel, 3×3 grid
+ *   "banner" — inner-page header, one photo across the full width
  */
 import site from '../data/site.json';
 
 interface Props {
-  layout?: 'mosaic' | 'strip' | 'grid3';
+  layout?: 'mosaic' | 'strip' | 'grid3' | 'banner';
   images?: string[];
   offset?: number;
   class?: string;
@@ -30,7 +31,7 @@ const {
   zoom = false,
 } = Astro.props;
 
-const tileCount = { mosaic: 14, strip: 5, grid3: 9 }[layout];
+const tileCount = { mosaic: 14, strip: 5, grid3: 9, banner: 1 }[layout];
 const pool = images.length ? images : site.gallery;
 const tiles = Array.from({ length: tileCount }, (_, i) => pool[(offset + i) % pool.length]);
 
@@ -97,6 +98,9 @@ const focus = (i: number) => FOCUS[(i * 3) % FOCUS.length];
   .gallery--strip .gallery__grid {
     grid-template-columns: 1.6fr 1fr 1.3fr 1fr 1.4fr;
   }
+
+  /* Inner-page header banner: one photo across the full width */
+  .gallery--banner .gallery__grid { grid-template-columns: 1fr; }
 
   /* Log-in panel: 3×3 */
   .gallery--grid3 .gallery__grid {

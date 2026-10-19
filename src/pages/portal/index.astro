@@ -11,11 +11,29 @@ export const prerender = false;
 const { supabase, profile, user } = Astro.locals;
 const now = new Date().toISOString();
 
-const [nextRes, toolsRes, questionsRes, slidesRes] = await Promise.all([
+// ---- Zetamac score form (plain form post, works without JavaScript) ----
+let zetaError = '';
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  if (String(form.get('intent') ?? '') === 'zetamac') {
+    const raw = String(form.get('score') ?? '').trim();
+    const score = Number(raw);
+    if (!/^\d{1,3}$/.test(raw) || score < 1 || score > 500) zetaError = 'Enter a whole-number score between 1 and 500.';
+    else {
+      const { error } = await supabase.from('zetamac_scores').insert({ score });
+      if (!error) return Astro.redirect('/portal?zeta=1#zetamac');
+      zetaError = "We couldn't save your score. Please try again.";
+    }
+  }
+}
+const zetaPosted = Astro.url.searchParams.get('zeta') === '1';
+
+const [nextRes, toolsRes, questionsRes, slidesRes, zetaRes] = await Promise.all([
   supabase.from('sessions').select('*').gte('date', now).order('date').limit(1).maybeSingle(),
   supabase.from('resources').select('*').eq('category', 'Practice tools').order('sort_order').order('title').limit(8),
   supabase.from('question_feed').select('*').order('created_at', { ascending: false }).limit(4),
   supabase.from('sessions').select('*').lt('date', now).order('date', { ascending: false }).limit(3),
+  supabase.from('zetamac_scores').select('score, created_at, user_id, profiles(full_name)').order('score', { ascending: false }).order('created_at').limit(100),
 ]);
 
 const nextSession = nextRes.data as Session | null;
@@ -24,6 +42,16 @@ const questions = (questionsRes.data ?? []) as Question[];
 // Each recent session links to its slides (or recording); our own PDFs go to
 // Resources, where they're embedded.
 const latest = ((slidesRes.data ?? []) as Session[]).map((s) => ({ ...s, link: s.slides_url ?? s.recording_url }));
+
+// Each person's best score, highest first.
+type ZetaRow = { score: number; user_id: string; profiles: { full_name: string | null } | { full_name: string | null }[] | null };
+const bestByPerson = new Map<string, { name: string; score: number; mine: boolean }>();
+for (const r of (zetaRes.data ?? []) as unknown as ZetaRow[]) {
+  if (bestByPerson.has(r.user_id)) continue;
+  const p = Array.isArray(r.profiles) ? r.profiles[0] : r.profiles;
+  bestByPerson.set(r.user_id, { name: p?.full_name?.trim() || 'Member', score: r.score, mine: r.user_id === user?.id });
+}
+const zetaBoard = [...bestByPerson.values()].slice(0, 5);
 
 const firstName = profile.full_name?.trim().split(/\s+/)[0] || user?.email?.split('@')[0] || 'there';
 ---
@@ -94,6 +122,34 @@ const firstName = profile.full_name?.trim().split(/\s+/)[0] || user?.email?.spli
           : <p class="empty">Slides will appear here after each session.</p>}
       </div>
       <a href="/portal/slides">All sessions</a>
+
+      <section class="zeta" id="zetamac" aria-labelledby="zeta-h">
+        <div class="section__head">
+          <h2 class="h2" id="zeta-h">Zetamac scores</h2>
+        </div>
+        <div class="box zeta__box">
+          {zetaBoard.length > 0
+            ? (
+              <ol class="zeta__list">
+                {zetaBoard.map((r) => (
+                  <li class:list={{ 'is-mine': r.mine }}>
+                    <span class="zeta__name">{r.name}</span>
+                    <span class="zeta__score">{r.score}</span>
+                  </li>
+                ))}
+              </ol>
+            )
+            : <p class="empty">No scores yet. Post the first one.</p>}
+          <form class="zeta__form" method="post" action="/portal#zetamac">
+            <input type="hidden" name="intent" value="zetamac" />
+            <label class="visually-hidden" for="zeta-score">Your Zetamac score</label>
+            <input class="input" id="zeta-score" name="score" type="number" inputmode="numeric" min="1" max="500" step="1" required placeholder="Your score" />
+            <button class="btn btn--small" type="submit">Submit</button>
+          </form>
+          {zetaError && <p class="alert alert--error" role="alert">{zetaError}</p>}
+          {zetaPosted && !zetaError && <p class="alert alert--ok" role="status">Score posted.</p>}
+        </div>
+      </section>
     </aside>
   </div>
 </PortalLayout>
@@ -119,6 +175,16 @@ const firstName = profile.full_name?.trim().split(/\s+/)[0] || user?.email?.spli
   .cols__side > a { font-size: 14px; align-self: flex-start; }
   .slide__title { display: block; font-weight: 500; font-size: 14.5px; }
   .slide__meta { font-size: 13px; color: var(--muted); }
+
+  .zeta { margin-top: 28px; }
+  .zeta__box { padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; }
+  .zeta__list { list-style: none; margin: 0; padding: 0; }
+  .zeta__list li { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; font-size: 14.5px; border-bottom: 1px solid var(--rule); }
+  .zeta__list li:last-child { border-bottom: 0; }
+  .zeta__list li.is-mine { font-weight: 600; }
+  .zeta__score { font-variant-numeric: tabular-nums; font-weight: 600; }
+  .zeta__form { display: flex; gap: 8px; }
+  .zeta__form .input { flex: 1; min-width: 0; height: 38px; font-size: 14px; padding: 0 12px; }
 
   @media (max-width: 640px) {
     .next { width: 100%; }

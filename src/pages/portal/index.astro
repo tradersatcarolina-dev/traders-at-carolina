@@ -123,22 +123,18 @@ const firstName = profile.full_name?.trim().split(/\s+/)[0] || user?.email?.spli
       </div>
       <a href="/portal/slides">All sessions</a>
 
-      <section class="zeta" id="zetamac" aria-labelledby="zeta-h">
+      <section class="section zeta" id="zetamac" aria-labelledby="zeta-h">
         <div class="section__head">
           <h2 class="h2" id="zeta-h">Zetamac scores</h2>
         </div>
-        <div class="box zeta__box">
+        <div class="box">
           {zetaBoard.length > 0
-            ? (
-              <ol class="zeta__list">
-                {zetaBoard.map((r) => (
-                  <li class:list={{ 'is-mine': r.mine }}>
-                    <span class="zeta__name">{r.name}</span>
-                    <span class="zeta__score">{r.score}</span>
-                  </li>
-                ))}
-              </ol>
-            )
+            ? zetaBoard.map((r) => (
+                <div class="row-link zeta__row">
+                  <span class="slide__title">{r.name}</span>
+                  <span class="slide__title zeta__score">{r.score}</span>
+                </div>
+              ))
             : <p class="empty">No scores yet. Post the first one.</p>}
           <form class="zeta__form" method="post" action="/portal#zetamac">
             <input type="hidden" name="intent" value="zetamac" />
@@ -146,9 +142,9 @@ const firstName = profile.full_name?.trim().split(/\s+/)[0] || user?.email?.spli
             <input class="input" id="zeta-score" name="score" type="number" inputmode="numeric" min="1" max="500" step="1" required placeholder="Your score" />
             <button class="btn btn--small" type="submit">Submit</button>
           </form>
-          {zetaError && <p class="alert alert--error" role="alert">{zetaError}</p>}
-          {zetaPosted && !zetaError && <p class="alert alert--ok" role="status">Score posted.</p>}
         </div>
+        {zetaError && <p class="alert alert--error" role="alert">{zetaError}</p>}
+        {zetaPosted && !zetaError && <p class="alert alert--ok" role="status">Score posted.</p>}
       </section>
     </aside>
   </div>
@@ -177,13 +173,9 @@ const firstName = profile.full_name?.trim().split(/\s+/)[0] || user?.email?.spli
   .slide__meta { font-size: 13px; color: var(--muted); }
 
   .zeta { margin-top: 28px; }
-  .zeta__box { padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; }
-  .zeta__list { list-style: none; margin: 0; padding: 0; }
-  .zeta__list li { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; font-size: 14.5px; border-bottom: 1px solid var(--rule); }
-  .zeta__list li:last-child { border-bottom: 0; }
-  .zeta__list li.is-mine { font-weight: 600; }
-  .zeta__score { font-variant-numeric: tabular-nums; font-weight: 600; }
-  .zeta__form { display: flex; gap: 8px; }
+  .zeta__row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+  .zeta__score { font-variant-numeric: tabular-nums; }
+  .zeta__form { display: flex; gap: 8px; padding: 14px 18px; }
   .zeta__form .input { flex: 1; min-width: 0; height: 38px; font-size: 14px; padding: 0 12px; }
 
   @media (max-width: 640px) {

@@ -101,6 +101,9 @@ const focus = (i: number) => FOCUS[(i * 3) % FOCUS.length];
 
   /* Inner-page header banner: one photo across the full width */
   .gallery--banner .gallery__grid { grid-template-columns: 1fr; }
+  /* Crop toward the top of the photo so everyone's faces stay in frame
+     (overrides the inline per-tile focus). */
+  .gallery--banner .gallery__tile img { object-position: 50% 18% !important; }
 
   /* Log-in panel: 3×3 */
   .gallery--grid3 .gallery__grid {

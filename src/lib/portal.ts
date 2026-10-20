@@ -1,7 +1,7 @@
 /** Shared lists and helpers for the members' area. Keep the lists in sync with
  * the check constraints in supabase/migrations. */
 
-export const CATEGORIES = ['Probability', 'Market making', 'Mental math', 'Brainteaser', 'Estimation', 'Behavioral'] as const;
+export const CATEGORIES = ['Probability', 'Market making', 'Mental math', 'Brainteaser', 'Estimation', 'Behavioral', 'Quantitative Developer', 'Coding'] as const;
 /** Chip labels on the problem bank filter. */
 export const CATEGORY_CHIP: Record<string, string> = { Brainteaser: 'Brainteasers' };
 export const DIFFICULTIES = ['Easy', 'Medium', 'Hard'] as const;
